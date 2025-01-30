@@ -13,7 +13,29 @@
     <div id="map" style="height: 600px;"></div>
 
     <script>
-        var map = L.map('map').setView([37.7749, -122.4194], 10); // San Francisco
+
+        fetch('businesses.json')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("Business Data Loaded: ", data); // Check if data is correct
+        data.forEach(function(business) {
+            console.log("Adding marker for: ", business.name);
+            var marker = L.marker([business.lat, business.lng])
+                .bindPopup(`<b>${business.name}</b>`);
+            markers.addLayer(marker);
+        });
+        map.addLayer(markers);
+    })
+    .catch(error => console.error("Error loading JSON: ", error));
+
+
+    
+        var map = L.map('map').setView([-18, 170], 10); // San Francisco
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
