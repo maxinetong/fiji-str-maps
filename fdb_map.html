@@ -5,48 +5,93 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-
     <style>
         #map {
             width: 100%;
             height: 100vh;
         }
-
         @media (max-width: 768px) {
             #map {
-                height: 50vh; /* Smaller height for tablets and phones */
+                height: 50vh;
+            }
+        }
+        @media (max-width: 480px) {
+            #map {
+                height: 40vh;
             }
         }
 
-        @media (max-width: 480px) {
-            #map {
-                height: 40vh; /* Even smaller height for small screens */
-            }
+        /* Custom marker style */
+        .custom-marker {
+            width: 12px !important;
+            height: 12px !important;
+            border-radius: 50%;
+            border: 3px solid #2B65EC;
+            background-color: white;
+        }
+
+        /* Custom popup styling */
+        .leaflet-popup-content-wrapper {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .business-name {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 14px;
+            color: #2B65EC;
+            margin-bottom: 4px;
+        }
+        .business-address {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Style cluster markers to match */
+        .marker-cluster-small {
+            background-color: rgba(43, 101, 236, 0.3);
+        }
+        .marker-cluster-small div {
+            background-color: rgba(43, 101, 236, 0.5);
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .marker-cluster {
+            background-color: rgba(43, 101, 236, 0.3);
+        }
+        .marker-cluster div {
+            background-color: rgba(43, 101, 236, 0.5);
+            color: white;
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
-
     <script>
         // Set starting point in Fiji
         var map = L.map('map').setView([-17.7134, 178.0650], 10);
-
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
+        // Custom icon for individual markers
+        const customIcon = L.divIcon({
+            className: 'custom-marker',
+            iconSize: [12, 12],
+            iconAnchor: [6, 6]
+        });
+
         // Adjust clustering behavior
         var markers = L.markerClusterGroup({
-            maxClusterRadius: 30, // Reduce clustering effect
-            disableClusteringAtZoom: 12, // Show individual pins earlier
+            maxClusterRadius: 30,
+            disableClusteringAtZoom: 12,
             iconCreateFunction: function (cluster) {
                 var childCount = cluster.getChildCount();
-
-                // If 5 or fewer markers, prevent clustering
                 if (childCount <= 5) {
                     return L.divIcon({ 
                         html: `<b>${childCount}</b>`, 
@@ -54,8 +99,6 @@
                         iconSize: L.point(30, 30) 
                     });
                 }
-
-                // Default cluster styling
                 return L.divIcon({ 
                     html: `<b>${childCount}</b>`, 
                     className: 'marker-cluster', 
@@ -76,15 +119,18 @@
                 console.log("Successfully loaded JSON:", data);
                 
                 data.forEach(function(business) {
-                    if (business.lat && business.lng) { // Ensure valid coordinates
-                        var marker = L.marker([business.lat, business.lng])
-                            .bindPopup(`<b>${business.name}</b><br>${business.address}`);
+                    if (business.lat && business.lng) {
+                        var marker = L.marker([business.lat, business.lng], {
+                            icon: customIcon
+                        }).bindPopup(`
+                            <div class="business-name">${business.name}</div>
+                            <div class="business-address">${business.address}</div>
+                        `);
                         markers.addLayer(marker);
                     } else {
                         console.warn("Skipping invalid business entry:", business);
                     }
                 });
-
                 map.addLayer(markers);
             })
             .catch(error => {
