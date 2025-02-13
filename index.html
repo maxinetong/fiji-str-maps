@@ -39,7 +39,11 @@
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        var markers = L.markerClusterGroup();
+                // Adjust clustering behavior
+        var markers = L.markerClusterGroup({
+            maxClusterRadius: 40, // Reduce clustering effect
+            disableClusteringAtZoom: 12 // Show individual pins earlier
+        });
 
         fetch('businesses.json')
             .then(response => response.json())
