@@ -4,7 +4,6 @@
     <title>Fiji Business Maps</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
     <style>
         .map-container {
             margin: 20px;
@@ -22,53 +21,46 @@
             margin-bottom: 15px;
             text-align: center;
         }
-        #download-buttons {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            z-index: 1000;
-        }
-        button {
-            display: block;
-            margin: 5px;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+        /* Custom marker style */
         .custom-marker {
             width: 12px !important;
             height: 12px !important;
             border-radius: 50%;
-            border: 3px solid red;
+            border: 3px solid #2B65EC;  /* Royal blue color */
             background-color: white;
         }
-        #loading {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        /* Custom popup style */
+        .leaflet-popup-content-wrapper {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .business-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: #2B65EC;
+            margin-bottom: 4px;
+        }
+        .business-address {
+            font-size: 12px;
+            color: #666;
+        }
+        /* Custom label style */
+        .map-label {
             background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 2000;
-            font-family: Arial, sans-serif;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            pointer-events: none;
+        }
+        .map-label .business-name {
+            margin-bottom: 2px;
         }
     </style>
 </head>
 <body>
-    <div id="loading">Generating map image... Please wait.</div>
-
-    <div id="download-buttons">
-        <button onclick="captureMap('suva-map')">Save Suva Map</button>
-        <button onclick="captureMap('nadi-map')">Save Nadi Map</button>
-        <button onclick="captureMap('lautoka-map')">Save Lautoka Map</button>
-    </div>
-
     <div id="suva-container" class="map-container">
         <div class="title">Suva Businesses</div>
         <div id="suva-map" class="map"></div>
@@ -125,14 +117,47 @@
                    lng <= bounds.east;
         };
 
+        // Custom icon for markers
         const customIcon = L.divIcon({
             className: 'custom-marker',
             iconSize: [12, 12],
             iconAnchor: [6, 6]
         });
 
-        const maps = {};
-        
+        // Create a custom label class
+        class MapLabel extends L.Layer {
+            constructor(latlng, options) {
+                super();
+                this._latlng = L.latLng(latlng);
+                L.Util.setOptions(this, options);
+            }
+
+            onAdd(map) {
+                this._map = map;
+                let div = L.DomUtil.create('div', 'map-label');
+                div.innerHTML = `
+                    <div class="business-name">${this.options.name}</div>
+                    <div class="business-address">${this.options.address}</div>
+                `;
+                this._div = div;
+                map.getPanes().overlayPane.appendChild(div);
+                map.on('viewreset', this._reset, this);
+                this._reset();
+                return this;
+            }
+
+            onRemove(map) {
+                map.getPanes().overlayPane.removeChild(this._div);
+                map.off('viewreset', this._reset, this);
+            }
+
+            _reset() {
+                const pos = this._map.latLngToLayerPoint(this._latlng);
+                L.DomUtil.setPosition(this._div, pos);
+            }
+        }
+
+        // Initialize maps
         fetch('businesses_fdb.json')
             .then(response => response.json())
             .then(businesses => {
@@ -156,56 +181,25 @@
                     );
 
                     cityBusinesses.forEach(business => {
-                        L.marker([business.lat, business.lng], {icon: customIcon})
-                            .bindPopup(`<b>${business.name}</b><br>${business.address}`)
-                            .addTo(map);
-                    });
+                        // Add marker
+                        const marker = L.marker([business.lat, business.lng], {
+                            icon: customIcon
+                        }).addTo(map);
 
-                    maps[city] = map;
+                        // Add label
+                        new MapLabel([business.lat, business.lng], {
+                            name: business.name,
+                            address: business.address
+                        }).addTo(map);
+
+                        // Add popup
+                        marker.bindPopup(`
+                            <div class="business-name">${business.name}</div>
+                            <div class="business-address">${business.address}</div>
+                        `);
+                    });
                 }
             });
-
-        function showLoading() {
-            document.getElementById('loading').style.display = 'block';
-        }
-
-        function hideLoading() {
-            document.getElementById('loading').style.display = 'none';
-        }
-
-        async function captureMap(mapId) {
-            showLoading();
-            const container = document.getElementById(mapId).parentElement;
-            
-            try {
-                // Force a map refresh
-                maps[mapId.split('-')[0]].invalidateSize();
-                
-                // Wait for tiles to load
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                // Use dom-to-image instead of html2canvas
-                const dataUrl = await domtoimage.toPng(container, {
-                    width: container.offsetWidth,
-                    height: container.offsetHeight,
-                    style: {
-                        transform: 'scale(1)',
-                        transformOrigin: 'top left'
-                    }
-                });
-
-                // Create download link
-                const link = document.createElement('a');
-                link.download = `${mapId}.png`;
-                link.href = dataUrl;
-                link.click();
-            } catch (error) {
-                console.error('Error capturing map:', error);
-                alert('Error generating map image. Please try again.');
-            } finally {
-                hideLoading();
-            }
-        }
     </script>
 </body>
 </html>
