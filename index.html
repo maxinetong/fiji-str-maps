@@ -50,7 +50,7 @@
             .then(data => {
                 data.forEach(function(business) {
                     var marker = L.marker([business.lat, business.lng])
-                        .bindPopup(`<b>${business.name}</b>`);
+                        .bindPopup(`<b>${business.name}</b><br>${business.address}`);
                     markers.addLayer(marker);
                 });
 
