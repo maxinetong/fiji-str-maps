@@ -43,21 +43,54 @@
         var markers = L.markerClusterGroup({
             maxClusterRadius: 30, // Reduce clustering effect
             disableClusteringAtZoom: 12, // Show individual pins earlier
+            iconCreateFunction: function (cluster) {
+                var childCount = cluster.getChildCount();
+
+                // If 5 or fewer markers, prevent clustering
+                if (childCount <= 5) {
+                    return L.divIcon({ 
+                        html: `<b>${childCount}</b>`, 
+                        className: 'marker-cluster-small', 
+                        iconSize: L.point(30, 30) 
+                    });
+                }
+
+                // Default cluster styling
+                return L.divIcon({ 
+                    html: `<b>${childCount}</b>`, 
+                    className: 'marker-cluster', 
+                    iconSize: L.point(50, 50) 
+                });
+            }
         });
 
         // Fetch business data from JSON file
         fetch('businesses_fdb.json')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log("Successfully loaded JSON:", data);
+                
                 data.forEach(function(business) {
-                    var marker = L.marker([business.lat, business.lng])
-                        .bindPopup(`<b>${business.name}</b><br>${business.address}`);
-                    markers.addLayer(marker);
+                    if (business.lat && business.lng) { // Ensure valid coordinates
+                        var marker = L.marker([business.lat, business.lng])
+                            .bindPopup(`<b>${business.name}</b><br>${business.address}`);
+                        markers.addLayer(marker);
+                    } else {
+                        console.warn("Skipping invalid business entry:", business);
+                    }
                 });
 
                 map.addLayer(markers);
             })
-            .catch(error => console.error("Error loading JSON: ", error));
+            .catch(error => {
+                console.error("Error loading JSON: ", error);
+                alert("Failed to load business data.");
+            });
     </script>
 </body>
 </html>
