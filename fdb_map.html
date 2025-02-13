@@ -43,6 +43,25 @@
         var markers = L.markerClusterGroup({
             maxClusterRadius: 30, // Reduce clustering effect
             disableClusteringAtZoom: 14 // Show individual pins earlier
+              iconCreateFunction: function (cluster) {
+        var childCount = cluster.getChildCount();
+
+        // Stop clustering when there are 5 or fewer markers
+        if (childCount <= 5) {
+            return L.divIcon({ 
+                html: `<b>${childCount}</b>`, 
+                className: 'leaflet-marker-icon', 
+                iconSize: L.point(40, 40) 
+            });
+        }
+
+        // Default cluster styling
+        return L.divIcon({ 
+            html: `<b>${childCount}</b>`, 
+            className: 'marker-cluster', 
+            iconSize: L.point(50, 50) 
+        });
+    }
         });
 
         fetch('businesses_fdb.json')
