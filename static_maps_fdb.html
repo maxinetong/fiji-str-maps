@@ -10,15 +10,17 @@
             margin: 20px;
             padding: 20px;
             border: 1px solid #ccc;
+            background: white;
         }
         .map {
-            width: 800px;
-            height: 600px;
+            width: 1600px;  /* Doubled the width */
+            height: 1200px; /* Doubled the height */
         }
         .title {
             font-family: Arial, sans-serif;
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 32px; /* Increased font size */
+            margin-bottom: 15px;
+            text-align: center;
         }
         #download-buttons {
             position: fixed;
@@ -28,12 +30,22 @@
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            z-index: 1000;
         }
         button {
             display: block;
             margin: 5px;
             padding: 8px 16px;
             cursor: pointer;
+            font-size: 16px;
+        }
+        /* Custom marker styles */
+        .custom-marker {
+            width: 12px !important;
+            height: 12px !important;
+            border-radius: 50%;
+            border: 3px solid red;
+            background-color: white;
         }
     </style>
 </head>
@@ -63,7 +75,7 @@
         const cityConfigs = {
             suva: {
                 center: [-18.130224, 178.438269],
-                zoom: 13,
+                zoom: 14, // Increased zoom level
                 bounds: {
                     south: -18.18,
                     north: -18.05,
@@ -73,7 +85,7 @@
             },
             nadi: {
                 center: [-17.788531, 177.431054],
-                zoom: 13,
+                zoom: 14,
                 bounds: {
                     south: -17.85,
                     north: -17.75,
@@ -83,7 +95,7 @@
             },
             lautoka: {
                 center: [-17.611299, 177.453216],
-                zoom: 13,
+                zoom: 14,
                 bounds: {
                     south: -17.65,
                     north: -17.55,
@@ -99,6 +111,13 @@
                    lng >= bounds.west && 
                    lng <= bounds.east;
         };
+
+        // Custom icon for markers
+        const customIcon = L.divIcon({
+            className: 'custom-marker',
+            iconSize: [12, 12],
+            iconAnchor: [6, 6]
+        });
 
         // Initialize maps
         const maps = {};
@@ -126,7 +145,7 @@
                     );
 
                     cityBusinesses.forEach(business => {
-                        L.marker([business.lat, business.lng])
+                        L.marker([business.lat, business.lng], {icon: customIcon})
                             .bindPopup(`<b>${business.name}</b><br>${business.address}`)
                             .addTo(map);
                     });
@@ -135,12 +154,28 @@
                 }
             });
 
-        function captureMap(mapId) {
+        async function captureMap(mapId) {
             const container = document.getElementById(mapId).parentElement;
-            html2canvas(container).then(canvas => {
+            
+            // Wait for tiles to load
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Force a map refresh
+            maps[mapId.split('-')[0]].invalidateSize();
+            
+            // Capture with better settings
+            html2canvas(container, {
+                useCORS: true,
+                allowTaint: true,
+                foreignObjectRendering: true,
+                scale: 1, // Maintain quality
+                logging: true,
+                width: container.offsetWidth,
+                height: container.offsetHeight
+            }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `${mapId}.png`;
-                link.href = canvas.toDataURL();
+                link.href = canvas.toDataURL('image/png');
                 link.click();
             });
         }
