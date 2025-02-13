@@ -1,9 +1,11 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <title>FDB Business Maps (By City)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://norkart.github.io/Leaflet-BigImage/dist/Leaflet.BigImage.min.js"></script>
+    <!-- Your existing styles remain the same -->
     <style>
         /* Keep all your existing styles */
         .map-container {
@@ -46,25 +48,6 @@
             font-size: 12px;
             color: #666;
         }
-        .screenshot-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            padding: 10px 20px;
-            background-color: white;
-            border: 2px solid #2B65EC;
-            border-radius: 4px;
-            color: #2B65EC;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .screenshot-button:hover {
-            background-color: #2B65EC;
-            color: white;
-        }
         .map-wrapper {
             position: relative;
         }
@@ -74,9 +57,6 @@
     <div id="suva-container" class="map-container">
         <div class="title">Suva Businesses</div>
         <div class="map-wrapper">
-            <button class="screenshot-button" onclick="getMapUrl('suva')">
-                📸 Capture Current View
-            </button>
             <div id="suva-map" class="map"></div>
         </div>
     </div>
@@ -84,9 +64,6 @@
     <div id="nadi-container" class="map-container">
         <div class="title">Nadi Businesses</div>
         <div class="map-wrapper">
-            <button class="screenshot-button" onclick="getMapUrl('nadi')">
-                📸 Capture Current View
-            </button>
             <div id="nadi-map" class="map"></div>
         </div>
     </div>
@@ -94,9 +71,6 @@
     <div id="lautoka-container" class="map-container">
         <div class="title">Lautoka Businesses</div>
         <div class="map-wrapper">
-            <button class="screenshot-button" onclick="getMapUrl('lautoka')">
-                📸 Capture Current View
-            </button>
             <div id="lautoka-map" class="map"></div>
         </div>
     </div>
@@ -148,9 +122,6 @@
             iconAnchor: [6, 6]
         });
 
-        // Store map instances
-        const maps = {};
-
         fetch('businesses_fdb.json')
             .then(response => response.json())
             .then(businesses => {
@@ -165,11 +136,15 @@
                         doubleClickZoom: true
                     });
 
-                    // Store map instance
-                    maps[city] = map;
-
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    // Add BigImage control
+                    L.control.bigImage({
+                        position: 'topright',
+                        title: 'Download Map Image',
+                        downloadName: `${city}_businesses_map`
                     }).addTo(map);
 
                     const cityBusinesses = businesses.filter(b => 
@@ -188,22 +163,6 @@
                     });
                 }
             });
-
-        function getMapUrl(city) {
-            const map = maps[city];
-            if (!map) return;
-
-            // Get current map bounds
-            const bounds = map.getBounds();
-            const zoom = map.getZoom();
-            const center = map.getCenter();
-
-            // Generate static map URL
-            const staticMapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${center.lat},${center.lng}&zoom=${zoom}&size=1600x1200&markers=${bounds.getNorth()},${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()}`;
-
-            // Open in new tab
-            window.open(staticMapUrl, '_blank');
-        }
     </script>
 </body>
 </html>
