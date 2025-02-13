@@ -42,20 +42,22 @@
                 // Adjust clustering behavior
         var markers = L.markerClusterGroup({
             maxClusterRadius: 30, // Reduce clustering effect
-            disableClusteringAtZoom: 12 // Show individual pins earlier
+            disableClusteringAtZoom: 12, // Show individual pins earlier
               iconCreateFunction: function (cluster) {
         var childCount = cluster.getChildCount();
 
-        // Stop clustering when there are 5 or fewer markers
+        // Stop clustering if 5 or fewer markers exist
         if (childCount <= 5) {
-            return L.divIcon({ 
-                html: `<b>${childCount}</b>`, 
-                className: 'leaflet-marker-icon', 
-                iconSize: L.point(40, 40) 
-            });
+            var markersArray = cluster.getAllChildMarkers();
+
+            // Break the cluster apart by adding individual markers
+            markersArray.forEach(marker => markers.addLayer(marker));
+
+            // Return null to prevent clustering
+            return null;
         }
 
-        // Default cluster styling
+        // Default clustering behavior for more than 5 markers
         return L.divIcon({ 
             html: `<b>${childCount}</b>`, 
             className: 'marker-cluster', 
