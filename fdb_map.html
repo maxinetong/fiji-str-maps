@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title> FDB Business Map </title>
+    <title>FDB Business Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
@@ -32,52 +32,39 @@
     <div id="map"></div>
 
     <script>
-        //set starting point in Fiji
+        // Set starting point in Fiji
         var map = L.map('map').setView([-17.7134, 178.0650], 10);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-                // Adjust clustering behavior
+        // Adjust clustering behavior
         var markers = L.markerClusterGroup({
             maxClusterRadius: 30, // Reduce clustering effect
             disableClusteringAtZoom: 12, // Show individual pins earlier
-              iconCreateFunction: function (cluster) {
-        var childCount = cluster.getChildCount();
+            iconCreateFunction: function (cluster) {
+                var childCount = cluster.getChildCount();
 
-        // Stop clustering if 5 or fewer markers exist
-        if (childCount <= 5) {
-            var markersArray = cluster.getAllChildMarkers();
+                // Show individual markers when 5 or fewer exist
+                if (childCount <= 5) {
+                    var markersArray = cluster.getAllChildMarkers();
+                    markersArray.forEach(marker => markers.addLayer(marker));
+                    return null; // Prevent clustering
+                }
 
-            // Break the cluster apart by adding individual markers
-            markersArray.forEach(marker => markers.addLayer(marker));
-
-            // Return null to prevent clustering
-            return null;
-        }
-
-        // Default clustering behavior for more than 5 markers
-        return L.divIcon({ 
-            html: `<b>${childCount}</b>`, 
-            className: 'marker-cluster', 
-            iconSize: L.point(50, 50) 
-        });
-    }
+                // Default cluster styling
+                return L.divIcon({ 
+                    html: `<b>${childCount}</b>`, 
+                    className: 'marker-cluster', 
+                    iconSize: L.point(50, 50) 
+                });
+            }
         });
 
+        // Fetch business data from JSON file
         fetch('businesses_fdb.json')
             .then(response => response.json())
             .then(data => {
                 data.forEach(function(business) {
-                    var marker = L.marker([business.lat, business.lng])
-                        .bindPopup(`<b>${business.name}</b><br>${business.address}`);
-                    markers.addLayer(marker);
-                });
-
-                map.addLayer(markers);
-            })
-            .catch(error => console.error("Error loading JSON: ", error));
-    </script>
-</body>
-</html>
+                    var 
