@@ -45,7 +45,7 @@
             disableClusteringAtZoom: 14 // Show individual pins earlier
         });
 
-        fetch('businesses.json')
+        fetch('businesses_fdb.json')
             .then(response => response.json())
             .then(data => {
                 data.forEach(function(business) {
