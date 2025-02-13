@@ -41,8 +41,8 @@
 
                 // Adjust clustering behavior
         var markers = L.markerClusterGroup({
-            maxClusterRadius: 40, // Reduce clustering effect
-            disableClusteringAtZoom: 12 // Show individual pins earlier
+            maxClusterRadius: 20, // Reduce clustering effect
+            disableClusteringAtZoom: 8 // Show individual pins earlier
         });
 
         fetch('businesses.json')
