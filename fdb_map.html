@@ -67,4 +67,14 @@
             .then(response => response.json())
             .then(data => {
                 data.forEach(function(business) {
-                    var 
+                    var marker = L.marker([business.lat, business.lng])
+                        .bindPopup(`<b>${business.name}</b><br>${business.address}`);
+                    markers.addLayer(marker);
+                });
+
+                map.addLayer(markers);
+            })
+            .catch(error => console.error("Error loading JSON: ", error));
+    </script>
+</body>
+</html>
