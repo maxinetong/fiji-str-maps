@@ -4,7 +4,7 @@
     <title>Fiji Business Maps</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
     <style>
         .map-container {
             margin: 20px;
@@ -13,12 +13,12 @@
             background: white;
         }
         .map {
-            width: 1600px;  /* Doubled the width */
-            height: 1200px; /* Doubled the height */
+            width: 1600px;
+            height: 1200px;
         }
         .title {
             font-family: Arial, sans-serif;
-            font-size: 32px; /* Increased font size */
+            font-size: 32px;
             margin-bottom: 15px;
             text-align: center;
         }
@@ -39,7 +39,6 @@
             cursor: pointer;
             font-size: 16px;
         }
-        /* Custom marker styles */
         .custom-marker {
             width: 12px !important;
             height: 12px !important;
@@ -47,9 +46,23 @@
             border: 3px solid red;
             background-color: white;
         }
+        #loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 2000;
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
+    <div id="loading">Generating map image... Please wait.</div>
+
     <div id="download-buttons">
         <button onclick="captureMap('suva-map')">Save Suva Map</button>
         <button onclick="captureMap('nadi-map')">Save Nadi Map</button>
@@ -75,7 +88,7 @@
         const cityConfigs = {
             suva: {
                 center: [-18.130224, 178.438269],
-                zoom: 14, // Increased zoom level
+                zoom: 14,
                 bounds: {
                     south: -18.18,
                     north: -18.05,
@@ -112,14 +125,12 @@
                    lng <= bounds.east;
         };
 
-        // Custom icon for markers
         const customIcon = L.divIcon({
             className: 'custom-marker',
             iconSize: [12, 12],
             iconAnchor: [6, 6]
         });
 
-        // Initialize maps
         const maps = {};
         
         fetch('businesses_fdb.json')
@@ -154,30 +165,46 @@
                 }
             });
 
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
         async function captureMap(mapId) {
+            showLoading();
             const container = document.getElementById(mapId).parentElement;
             
-            // Wait for tiles to load
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Force a map refresh
-            maps[mapId.split('-')[0]].invalidateSize();
-            
-            // Capture with better settings
-            html2canvas(container, {
-                useCORS: true,
-                allowTaint: true,
-                foreignObjectRendering: true,
-                scale: 1, // Maintain quality
-                logging: true,
-                width: container.offsetWidth,
-                height: container.offsetHeight
-            }).then(canvas => {
+            try {
+                // Force a map refresh
+                maps[mapId.split('-')[0]].invalidateSize();
+                
+                // Wait for tiles to load
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Use dom-to-image instead of html2canvas
+                const dataUrl = await domtoimage.toPng(container, {
+                    width: container.offsetWidth,
+                    height: container.offsetHeight,
+                    style: {
+                        transform: 'scale(1)',
+                        transformOrigin: 'top left'
+                    }
+                });
+
+                // Create download link
                 const link = document.createElement('a');
                 link.download = `${mapId}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.href = dataUrl;
                 link.click();
-            });
+            } catch (error) {
+                console.error('Error capturing map:', error);
+                alert('Error generating map image. Please try again.');
+            } finally {
+                hideLoading();
+            }
         }
     </script>
 </body>
