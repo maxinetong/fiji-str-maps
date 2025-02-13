@@ -43,23 +43,6 @@
         var markers = L.markerClusterGroup({
             maxClusterRadius: 30, // Reduce clustering effect
             disableClusteringAtZoom: 12, // Show individual pins earlier
-            iconCreateFunction: function (cluster) {
-                var childCount = cluster.getChildCount();
-
-                // Show individual markers when 5 or fewer exist
-                if (childCount <= 5) {
-                    var markersArray = cluster.getAllChildMarkers();
-                    markersArray.forEach(marker => markers.addLayer(marker));
-                    return null; // Prevent clustering
-                }
-
-                // Default cluster styling
-                return L.divIcon({ 
-                    html: `<b>${childCount}</b>`, 
-                    className: 'marker-cluster', 
-                    iconSize: L.point(50, 50) 
-                });
-            }
         });
 
         // Fetch business data from JSON file
