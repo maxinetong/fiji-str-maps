@@ -50,24 +50,6 @@
             font-size: 12px;
             color: #666;
         }
-
-        /* Style cluster markers to match */
-        .marker-cluster-small {
-            background-color: rgba(43, 101, 236, 0.3);
-        }
-        .marker-cluster-small div {
-            background-color: rgba(43, 101, 236, 0.5);
-            color: white;
-            font-family: Arial, sans-serif;
-        }
-        .marker-cluster {
-            background-color: rgba(43, 101, 236, 0.3);
-        }
-        .marker-cluster div {
-            background-color: rgba(43, 101, 236, 0.5);
-            color: white;
-            font-family: Arial, sans-serif;
-        }
     </style>
 </head>
 <body>
@@ -89,22 +71,7 @@
         // Adjust clustering behavior
         var markers = L.markerClusterGroup({
             maxClusterRadius: 30,
-            disableClusteringAtZoom: 12,
-            iconCreateFunction: function (cluster) {
-                var childCount = cluster.getChildCount();
-                if (childCount <= 5) {
-                    return L.divIcon({ 
-                        html: `<b>${childCount}</b>`, 
-                        className: 'marker-cluster-small', 
-                        iconSize: L.point(30, 30) 
-                    });
-                }
-                return L.divIcon({ 
-                    html: `<b>${childCount}</b>`, 
-                    className: 'marker-cluster', 
-                    iconSize: L.point(50, 50) 
-                });
-            }
+            disableClusteringAtZoom: 12
         });
 
         // Fetch business data from JSON file
