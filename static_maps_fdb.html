@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title> FDB Business Maps (By City) </title>
+    <title>FDB Business Maps (By City)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         .map-container {
             margin: 20px;
@@ -28,7 +29,6 @@
             border: 3px solid #2B65EC;
             background-color: white;
         }
-        /* Custom popup styling */
         .leaflet-popup-content-wrapper {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 4px;
@@ -46,22 +46,74 @@
             font-size: 12px;
             color: #666;
         }
+        .screenshot-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 20px;
+            background-color: white;
+            border: 2px solid #2B65EC;
+            border-radius: 4px;
+            color: #2B65EC;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .screenshot-button:hover {
+            background-color: #2B65EC;
+            color: white;
+        }
+        .map-wrapper {
+            position: relative;
+        }
+        #loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 2000;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
+    <div id="loading">Capturing map... Please wait.</div>
+
     <div id="suva-container" class="map-container">
         <div class="title">Suva Businesses</div>
-        <div id="suva-map" class="map"></div>
+        <div class="map-wrapper">
+            <button class="screenshot-button" onclick="captureMap('suva-map', 'Suva')">
+                📸 Capture Suva Map
+            </button>
+            <div id="suva-map" class="map"></div>
+        </div>
     </div>
 
     <div id="nadi-container" class="map-container">
         <div class="title">Nadi Businesses</div>
-        <div id="nadi-map" class="map"></div>
+        <div class="map-wrapper">
+            <button class="screenshot-button" onclick="captureMap('nadi-map', 'Nadi')">
+                📸 Capture Nadi Map
+            </button>
+            <div id="nadi-map" class="map"></div>
+        </div>
     </div>
 
     <div id="lautoka-container" class="map-container">
         <div class="title">Lautoka Businesses</div>
-        <div id="lautoka-map" class="map"></div>
+        <div class="map-wrapper">
+            <button class="screenshot-button" onclick="captureMap('lautoka-map', 'Lautoka')">
+                📸 Capture Lautoka Map
+            </button>
+            <div id="lautoka-map" class="map"></div>
+        </div>
     </div>
 
     <script>
@@ -110,6 +162,47 @@
             iconSize: [12, 12],
             iconAnchor: [6, 6]
         });
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        async function captureMap(mapId, cityName) {
+            showLoading();
+            
+            try {
+                // Wait a bit for any ongoing map rendering
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Get the map container
+                const mapContainer = document.getElementById(mapId).parentElement.parentElement;
+                
+                // Capture the map
+                const canvas = await html2canvas(mapContainer, {
+                    useCORS: true,
+                    allowTaint: true,
+                    foreignObjectRendering: true,
+                    logging: false,
+                    removeContainer: true,
+                    scale: 2 // Higher quality
+                });
+
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `${cityName}_Businesses_Map.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (error) {
+                console.error('Error capturing map:', error);
+                alert('Error generating map image. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        }
 
         fetch('businesses_fdb.json')
             .then(response => response.json())
