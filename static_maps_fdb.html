@@ -4,10 +4,8 @@
     <title>FDB Business Maps (By City)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://norkart.github.io/Leaflet-BigImage/dist/Leaflet.BigImage.min.js"></script>
-    <!-- Your existing styles remain the same -->
+    <script src="https://unpkg.com/leaflet-image@0.4.0/leaflet-image.js"></script>
     <style>
-        /* Keep all your existing styles */
         .map-container {
             margin: 20px;
             padding: 20px;
@@ -48,15 +46,52 @@
             font-size: 12px;
             color: #666;
         }
+        .screenshot-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 20px;
+            background-color: white;
+            border: 2px solid #2B65EC;
+            border-radius: 4px;
+            color: #2B65EC;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .screenshot-button:hover {
+            background-color: #2B65EC;
+            color: white;
+        }
         .map-wrapper {
             position: relative;
+        }
+        #loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 2000;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
     </style>
 </head>
 <body>
+    <div id="loading">Capturing map... Please wait.</div>
+
     <div id="suva-container" class="map-container">
         <div class="title">Suva Businesses</div>
         <div class="map-wrapper">
+            <button class="screenshot-button" onclick="captureMap('suva-map', 'Suva')">
+                📸 Capture Map
+            </button>
             <div id="suva-map" class="map"></div>
         </div>
     </div>
@@ -64,6 +99,9 @@
     <div id="nadi-container" class="map-container">
         <div class="title">Nadi Businesses</div>
         <div class="map-wrapper">
+            <button class="screenshot-button" onclick="captureMap('nadi-map', 'Nadi')">
+                📸 Capture Map
+            </button>
             <div id="nadi-map" class="map"></div>
         </div>
     </div>
@@ -71,6 +109,9 @@
     <div id="lautoka-container" class="map-container">
         <div class="title">Lautoka Businesses</div>
         <div class="map-wrapper">
+            <button class="screenshot-button" onclick="captureMap('lautoka-map', 'Lautoka')">
+                📸 Capture Map
+            </button>
             <div id="lautoka-map" class="map"></div>
         </div>
     </div>
@@ -122,6 +163,42 @@
             iconAnchor: [6, 6]
         });
 
+        // Store map instances
+        const maps = {};
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function captureMap(mapId, cityName) {
+            const mapKey = mapId.split('-')[0];
+            const map = maps[mapKey];
+            
+            if (!map) return;
+
+            showLoading();
+
+            leafletImage(map, function(err, canvas) {
+                hideLoading();
+                
+                if (err) {
+                    console.error('Error capturing map:', err);
+                    alert('Error generating map image. Please try again.');
+                    return;
+                }
+
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `${cityName}_Businesses_Map.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
         fetch('businesses_fdb.json')
             .then(response => response.json())
             .then(businesses => {
@@ -136,15 +213,11 @@
                         doubleClickZoom: true
                     });
 
+                    // Store map instance
+                    maps[city] = map;
+
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '© OpenStreetMap contributors'
-                    }).addTo(map);
-
-                    // Add BigImage control
-                    L.control.bigImage({
-                        position: 'topright',
-                        title: 'Download Map Image',
-                        downloadName: `${city}_businesses_map`
                     }).addTo(map);
 
                     const cityBusinesses = businesses.filter(b => 
