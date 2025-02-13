@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fiji Business Maps</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        .map-container {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+        .map {
+            width: 800px;
+            height: 600px;
+        }
+        .title {
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        #download-buttons {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            display: block;
+            margin: 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="download-buttons">
+        <button onclick="captureMap('suva-map')">Save Suva Map</button>
+        <button onclick="captureMap('nadi-map')">Save Nadi Map</button>
+        <button onclick="captureMap('lautoka-map')">Save Lautoka Map</button>
+    </div>
+
+    <div id="suva-container" class="map-container">
+        <div class="title">Suva Businesses</div>
+        <div id="suva-map" class="map"></div>
+    </div>
+
+    <div id="nadi-container" class="map-container">
+        <div class="title">Nadi Businesses</div>
+        <div id="nadi-map" class="map"></div>
+    </div>
+
+    <div id="lautoka-container" class="map-container">
+        <div class="title">Lautoka Businesses</div>
+        <div id="lautoka-map" class="map"></div>
+    </div>
+
+    <script>
+        const cityConfigs = {
+            suva: {
+                center: [-18.130224, 178.438269],
+                zoom: 13,
+                bounds: {
+                    south: -18.18,
+                    north: -18.05,
+                    west: 178.38,
+                    east: 178.48
+                }
+            },
+            nadi: {
+                center: [-17.788531, 177.431054],
+                zoom: 13,
+                bounds: {
+                    south: -17.85,
+                    north: -17.75,
+                    west: 177.38,
+                    east: 177.48
+                }
+            },
+            lautoka: {
+                center: [-17.611299, 177.453216],
+                zoom: 13,
+                bounds: {
+                    south: -17.65,
+                    north: -17.55,
+                    west: 177.42,
+                    east: 177.48
+                }
+            }
+        };
+
+        const isInBoundingBox = (lat, lng, bounds) => {
+            return lat >= bounds.south && 
+                   lat <= bounds.north && 
+                   lng >= bounds.west && 
+                   lng <= bounds.east;
+        };
+
+        // Initialize maps
+        const maps = {};
+        
+        fetch('businesses_fdb.json')
+            .then(response => response.json())
+            .then(businesses => {
+                for (const [city, config] of Object.entries(cityConfigs)) {
+                    const map = L.map(`${city}-map`, {
+                        center: config.center,
+                        zoom: config.zoom,
+                        zoomControl: false,
+                        dragging: false,
+                        touchZoom: false,
+                        scrollWheelZoom: false,
+                        doubleClickZoom: false
+                    });
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    const cityBusinesses = businesses.filter(b => 
+                        isInBoundingBox(b.lat, b.lng, config.bounds)
+                    );
+
+                    cityBusinesses.forEach(business => {
+                        L.marker([business.lat, business.lng])
+                            .bindPopup(`<b>${business.name}</b><br>${business.address}`)
+                            .addTo(map);
+                    });
+
+                    maps[city] = map;
+                }
+            });
+
+        function captureMap(mapId) {
+            const container = document.getElementById(mapId).parentElement;
+            html2canvas(container).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${mapId}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
