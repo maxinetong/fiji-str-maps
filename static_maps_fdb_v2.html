@@ -43,13 +43,23 @@
 
         .business-item {
             margin-bottom: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #2B65EC;
         }
 
-        .marker-number {
+        .business-item:hover {
+            text-decoration: underline;
+        }
+
+        .marker-group {
             font-weight: bold;
-            color: red;
+            color: white;
             font-size: 18px;
-            margin-right: 5px;
+            background: darkblue;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
         }
 
         .title {
@@ -59,14 +69,14 @@
             margin-bottom: 15px;
         }
 
-        .custom-marker {
-            width: 20px !important;
-            height: 20px !important;
+        .custom-cluster {
+            width: 25px !important;
+            height: 25px !important;
             font-weight: bold;
             background: red;
             color: white;
             text-align: center;
-            line-height: 20px;
+            line-height: 25px;
             border-radius: 50%;
         }
     </style>
@@ -80,7 +90,7 @@
         <div id="suva-map" class="map"></div>
         <div class="legend">
             <h3>Suva Businesses</h3>
-            <ol id="suva-list" class="business-list"></ol>
+            <ul id="suva-list" class="business-list"></ul>
         </div>
     </div>
 
@@ -89,7 +99,7 @@
         <div id="nadi-map" class="map"></div>
         <div class="legend">
             <h3>Nadi Businesses</h3>
-            <ol id="nadi-list" class="business-list"></ol>
+            <ul id="nadi-list" class="business-list"></ul>
         </div>
     </div>
 
@@ -98,7 +108,7 @@
         <div id="lautoka-map" class="map"></div>
         <div class="legend">
             <h3>Lautoka Businesses</h3>
-            <ol id="lautoka-list" class="business-list"></ol>
+            <ul id="lautoka-list" class="business-list"></ul>
         </div>
     </div>
 
@@ -123,23 +133,42 @@
                     const cityBusinesses = businesses.filter(b => isInBoundingBox(b.lat, b.lng, config.bounds));
                     const businessList = document.getElementById(`${city}-list`);
 
-                    cityBusinesses.forEach((business, index) => {
-                        const number = index + 1;
+                    // Group businesses by location
+                    const groupedLocations = {};
+                    cityBusinesses.forEach(business => {
+                        const key = `${business.lat},${business.lng}`;
+                        if (!groupedLocations[key]) {
+                            groupedLocations[key] = [];
+                        }
+                        groupedLocations[key].push(business);
+                    });
 
-                        // Add numbered marker to map
-                        L.marker([business.lat, business.lng], {
+                    Object.entries(groupedLocations).forEach(([location, businesses], index) => {
+                        const [lat, lng] = location.split(',').map(Number);
+
+                        // Create a label for the grouped businesses
+                        const groupLabel = `📍 Area ${index + 1} - ${businesses.length} Businesses`;
+
+                        // Popup content lists all businesses at that location
+                        const popupContent = businesses.map((b, i) => `<b>${i + 1}. ${b.name}</b><br>${b.address}`).join("<hr>");
+
+                        // Custom icon showing the number of businesses at one spot
+                        const marker = L.marker([lat, lng], {
                             icon: L.divIcon({
-                                className: 'custom-marker',
-                                html: number,
-                                iconSize: [20, 20]
+                                className: 'custom-cluster',
+                                html: businesses.length,
+                                iconSize: [25, 25]
                             })
-                        }).bindPopup(`<b>${number}. ${business.name}</b><br>${business.address}`)
-                        .addTo(map);
+                        }).bindPopup(popupContent).addTo(map);
 
-                        // Add business to the sidebar legend
+                        // Add the grouped location to the sidebar legend
                         const listItem = document.createElement('li');
                         listItem.classList.add('business-item');
-                        listItem.innerHTML = `<span class="marker-number">${number}.</span> <b>${business.name}</b><br>${business.address}`;
+                        listItem.innerHTML = `<b>${groupLabel}</b>`;
+                        listItem.addEventListener('click', () => {
+                            map.setView([lat, lng], 15);
+                            marker.openPopup();
+                        });
                         businessList.appendChild(listItem);
                     });
                 }
