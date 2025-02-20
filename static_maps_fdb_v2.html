@@ -43,13 +43,13 @@
 
         .business-item {
             margin-bottom: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            color: #2B65EC;
         }
 
-        .business-item:hover {
-            text-decoration: underline;
+        .marker-number {
+            font-weight: bold;
+            color: red;
+            font-size: 18px;
+            margin-right: 5px;
         }
 
         .title {
@@ -60,12 +60,14 @@
         }
 
         .custom-marker {
+            width: 20px !important;
+            height: 20px !important;
             font-weight: bold;
+            background: red;
             color: white;
-            background: darkblue;
             text-align: center;
-            padding: 5px;
-            border-radius: 5px;
+            line-height: 20px;
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -78,7 +80,7 @@
         <div id="suva-map" class="map"></div>
         <div class="legend">
             <h3>Suva Businesses</h3>
-            <ul id="suva-list" class="business-list"></ul>
+            <ol id="suva-list" class="business-list"></ol>
         </div>
     </div>
 
@@ -87,7 +89,7 @@
         <div id="nadi-map" class="map"></div>
         <div class="legend">
             <h3>Nadi Businesses</h3>
-            <ul id="nadi-list" class="business-list"></ul>
+            <ol id="nadi-list" class="business-list"></ol>
         </div>
     </div>
 
@@ -96,7 +98,7 @@
         <div id="lautoka-map" class="map"></div>
         <div class="legend">
             <h3>Lautoka Businesses</h3>
-            <ul id="lautoka-list" class="business-list"></ul>
+            <ol id="lautoka-list" class="business-list"></ol>
         </div>
     </div>
 
@@ -122,18 +124,22 @@
                     const businessList = document.getElementById(`${city}-list`);
 
                     cityBusinesses.forEach((business, index) => {
-                        const marker = L.marker([business.lat, business.lng])
-                            .bindPopup(`<b>${business.name}</b><br>${business.address}`)
-                            .addTo(map);
+                        const number = index + 1;
 
-                        // Add to the legend
+                        // Add numbered marker to map
+                        L.marker([business.lat, business.lng], {
+                            icon: L.divIcon({
+                                className: 'custom-marker',
+                                html: number,
+                                iconSize: [20, 20]
+                            })
+                        }).bindPopup(`<b>${number}. ${business.name}</b><br>${business.address}`)
+                        .addTo(map);
+
+                        // Add business to the sidebar legend
                         const listItem = document.createElement('li');
                         listItem.classList.add('business-item');
-                        listItem.innerHTML = `${index + 1}. <b>${business.name}</b> - ${business.address}`;
-                        listItem.addEventListener('click', () => {
-                            map.setView([business.lat, business.lng], 15);
-                            marker.openPopup();
-                        });
+                        listItem.innerHTML = `<span class="marker-number">${number}.</span> <b>${business.name}</b><br>${business.address}`;
                         businessList.appendChild(listItem);
                     });
                 }
