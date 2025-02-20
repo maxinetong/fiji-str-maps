@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FDB Business Maps (By City)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--primary-color);
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .map-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            padding: 20px;
+            max-width: 1800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .map {
+            flex: 2;
+            height: 600px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: none;
+        }
+
+        .legend {
+            flex: 1;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .legend h3 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .business-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .business-item {
+            margin-bottom: 1rem;
+            padding: 12px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .business-item:hover {
+            transform: translateX(5px);
+            background: #e9ecef;
+        }
+
+        .marker-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            background: var(--accent-color);
+            color: white;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .custom-marker {
+            border: 2px solid white !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: white;
+        }
+
+        select {
+            min-width: 150px;
+        }
+
+        button {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        /* Scrollbar styling */
+        .legend::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .legend::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .legend::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .legend::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1024px) {
+            .map-container {
+                flex-direction: column;
+            }
+
+            .legend {
+                max-width: none;
+                max-height: 300px;
+            }
+
+            .map {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .title {
+                font-size: 2rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">FDB Business Maps</h1>
+        <p class="subtitle">Explore businesses across major cities in Fiji</p>
+    </div>
+
+    <!-- Suva -->
+    <div class="map-container">
+        <div id="suva-map" class="map"></div>
+        <div class="legend">
+            <h3>Suva Businesses</h3>
+            <ol id="suva-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <!-- Nadi -->
+    <div class="map-container">
+        <div id="nadi-map" class="map"></div>
+        <div class="legend">
+            <h3>Nadi Businesses</h3>
+            <ol id="nadi-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <!-- Lautoka -->
+    <div class="map-container">
+        <div id="lautoka-map" class="map"></div>
+        <div class="legend">
+            <h3>Lautoka Businesses</h3>
+            <ol id="lautoka-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <select id="map-select" class="map-select">
+            <option value="suva-map">Suva</option>
+            <option value="nadi-map">Nadi</option>
+            <option value="lautoka-map">Lautoka</option>
+        </select>
+        <button id="download-map">
+            <i class="fas fa-download"></i>
+            Download Map
+        </button>
+    </div>
+
+    <script>
+        const cityConfigs = {
+            suva: { center: [-18.130224, 178.438269], zoom: 14, bounds: { south: -18.18, north: -18.05, west: 178.38, east: 178.48 } },
+            nadi: { center: [-17.788531, 177.431054], zoom: 14, bounds: { south: -17.85, north: -17.75, west: 177.38, east: 177.48 } },
+            lautoka: { center: [-17.611299, 177.453216], zoom: 14, bounds: { south: -17.65, north: -17.55, west: 177.42, east: 177.48 } }
+        };
+
+        const isInBoundingBox = (lat, lng, bounds) => {
+            return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
+        };
+
+        fetch('businesses_fdb.json')
+            .then(response => response.json())
+            .then(businesses => {
+                for (const [city, config] of Object.entries(cityConfigs)) {
+                    const map = L.map(`${city}-map`, { 
+                        center: config.center, 
+                        zoom: config.zoom,
+                        zoomControl: true,
+                        scrollWheelZoom: true
+                    });
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 19
+                    }).addTo(map);
+
+                    const cityBusinesses = businesses.filter(b => isInBoundingBox(b.lat, b.lng, config.bounds));
+                    const businessList = document.getElementById(`${city}-list`);
+
+                    cityBusinesses.forEach((business, index) => {
+                        const number = index + 1;
+
+                        // Add marker to map
+                        const marker = L.marker([business.lat, business.lng], {
+                            icon: L.divIcon({
+                                className: 'custom-marker',
+                                html: number,
+                                iconSize: [24, 24]
+                            })
+                        });
+
+                        // Enhanced popup content
+                        const popupContent = `
+                            <div style="padding: 10px;">
+                                <h3 style="margin: 0 0 8px 0; color: #2c3e50;">${number}. ${business.name}</h3>
+                                <p style="margin: 0; color: #666;">${business.address}</p>
+                            </div>
+                        `;
+
+                        marker.bindPopup(popupContent).addTo(map);
+
+                        // Add business to legend
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('business-item');
+                        listItem.innerHTML = `
+                            <span class="marker-number">${number}</span>
+                            <strong>${business.name}</strong><br>
+                            <span style="color: #666; margin-left: 34px;">${business.address}</span>
+                        `;
+
+                        // Add hover interaction
+                        listItem.addEventListener('mouseenter', () => marker.openPopup());
+                        listItem.addEventListener('mouseleave', () => marker.closePopup());
+
+                        businessList.appendChild(listItem);
+                    });
+                }
+            })
+            .catch(error => console.error("Error loading JSON: ", error));
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        document.getElementById("download-map").addEventListener("click", function() {
+            const selectedMap = document.getElementById("map-select").value;
+            const mapElement = document.getElementById(selectedMap);
+            
+            // Show loading state
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            html2canvas(mapElement, {
+                useCORS: true,
+                logging: false,
+                scale: 2,
+                backgroundColor: null
+            }).then((canvas) => {
+                const link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = `${selectedMap.split('-')[0]}-business-map.png`;
+                link.click();
+                
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-download"></i> Download Map';
+            }).catch(error => {
+                console.error("Error generating image:", error);
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-download"></i> Download Map';
+            });
+        });
+    </script>
+</body>
+</html>
