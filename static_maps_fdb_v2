@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FDB Business Maps (By City)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .map-container {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 30px;
+            width: 90%;
+            max-width: 1600px;
+        }
+
+        .map {
+            flex: 2;
+            height: 800px;
+            border: 1px solid #ccc;
+        }
+
+        .legend {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f8f8;
+            border-left: 2px solid #ccc;
+            max-height: 800px;
+        }
+
+        .business-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .business-item {
+            margin-bottom: 10px;
+        }
+
+        .marker-number {
+            font-weight: bold;
+            color: red;
+            font-size: 18px;
+            margin-right: 5px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .custom-marker {
+            width: 20px !important;
+            height: 20px !important;
+            font-weight: bold;
+            background: red;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="title">FDB Business Maps</div>
+
+    <!-- Suva -->
+    <div class="map-container">
+        <div id="suva-map" class="map"></div>
+        <div class="legend">
+            <h3>Suva Businesses</h3>
+            <ol id="suva-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <!-- Nadi -->
+    <div class="map-container">
+        <div id="nadi-map" class="map"></div>
+        <div class="legend">
+            <h3>Nadi Businesses</h3>
+            <ol id="nadi-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <!-- Lautoka -->
+    <div class="map-container">
+        <div id="lautoka-map" class="map"></div>
+        <div class="legend">
+            <h3>Lautoka Businesses</h3>
+            <ol id="lautoka-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <script>
+        const cityConfigs = {
+            suva: { center: [-18.130224, 178.438269], zoom: 14, bounds: { south: -18.18, north: -18.05, west: 178.38, east: 178.48 } },
+            nadi: { center: [-17.788531, 177.431054], zoom: 14, bounds: { south: -17.85, north: -17.75, west: 177.38, east: 177.48 } },
+            lautoka: { center: [-17.611299, 177.453216], zoom: 14, bounds: { south: -17.65, north: -17.55, west: 177.42, east: 177.48 } }
+        };
+
+        const isInBoundingBox = (lat, lng, bounds) => {
+            return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
+        };
+
+        fetch('businesses_fdb.json')
+            .then(response => response.json())
+            .then(businesses => {
+                for (const [city, config] of Object.entries(cityConfigs)) {
+                    const map = L.map(`${city}-map`, { center: config.center, zoom: config.zoom });
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+
+                    const cityBusinesses = businesses.filter(b => isInBoundingBox(b.lat, b.lng, config.bounds));
+                    const businessList = document.getElementById(`${city}-list`);
+
+                    cityBusinesses.forEach((business, index) => {
+                        const number = index + 1;
+
+                        // Add numbered marker to map
+                        L.marker([business.lat, business.lng], {
+                            icon: L.divIcon({
+                                className: 'custom-marker',
+                                html: number,
+                                iconSize: [20, 20]
+                            })
+                        }).bindPopup(`<b>${number}. ${business.name}</b><br>${business.address}`)
+                        .addTo(map);
+
+                        // Add business to the sidebar legend
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('business-item');
+                        listItem.innerHTML = `<span class="marker-number">${number}.</span> <b>${business.name}</b><br>${business.address}`;
+                        businessList.appendChild(listItem);
+                    });
+                }
+            })
+            .catch(error => console.error("Error loading JSON: ", error));
+    </script>
+</body>
+</html>
