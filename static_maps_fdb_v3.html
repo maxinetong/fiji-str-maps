@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FDB Business Maps (By City with bounding box)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .map-container {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 30px;
+            width: 90%;
+            max-width: 1600px;
+        }
+
+        .map {
+            flex: 2;
+            height: 800px;
+            border: 1px solid #ccc;
+        }
+
+        .legend {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f8f8;
+            border-left: 2px solid #ccc;
+            max-height: 800px;
+        }
+
+        .business-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .business-item {
+            margin-bottom: 10px;
+        }
+
+        .marker-number {
+            font-weight: bold;
+            color: red;
+            font-size: 18px;
+            margin-right: 5px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .custom-marker {
+            width: 20px !important;
+            height: 20px !important;
+            font-weight: bold;
+            background: red;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="title">FDB Business Maps</div>
+
+    <!-- Suva -->
+    <div class="map-container">
+        <div id="suva-map" class="map"></div>
+        <div class="legend">
+            <h3>Suva Businesses</h3>
+            <ol id="suva-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <!-- Nadi -->
+    <div class="map-container">
+        <div id="nadi-map" class="map"></div>
+        <div class="legend">
+            <h3>Nadi Businesses</h3>
+            <ol id="nadi-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <!-- Lautoka -->
+    <div class="map-container">
+        <div id="lautoka-map" class="map"></div>
+        <div class="legend">
+            <h3>Lautoka Businesses</h3>
+            <ol id="lautoka-list" class="business-list"></ol>
+        </div>
+    </div>
+
+    <script>
+        const cityConfigs = {
+            suva: { 
+                center: [-18.130224, 178.438269], 
+                zoom: 14, 
+                bounds: { south: -18.18, north: -18.05, west: 178.38, east: 178.48 },
+                clusters: [
+                    { 
+                        name: "CBD Area", 
+                        bounds: [[-18.14, 178.43], [-18.12, 178.45]], 
+                        color: "blue"
+                    }
+                ]
+            },
+            nadi: { 
+                center: [-17.788531, 177.431054], 
+                zoom: 14,
+                bounds: { south: -17.85, north: -17.75, west: 177.38, east: 177.48 },
+                clusters: [
+                    { 
+                        name: "Tourist Hub", 
+                        bounds: [[-17.80, 177.42], [-17.78, 177.44]], 
+                        color: "green" 
+                    }
+                ]
+            },
+            lautoka: { 
+                center: [-17.611299, 177.453216], 
+                zoom: 14, 
+                bounds: { south: -17.65, north: -17.55, west: 177.42, east: 177.48 },
+                clusters: [
+                    { 
+                        name: "Industrial Zone", 
+                        bounds: [[-17.62, 177.45], [-17.60, 177.47]], 
+                        color: "red" 
+                    }
+                ]
+            }
+        };
+
+        const isInBoundingBox = (lat, lng, bounds) => {
+            return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
+        };
+
+        fetch('businesses_fdb.json')
+            .then(response => response.json())
+            .then(businesses => {
+                for (const [city, config] of Object.entries(cityConfigs)) {
+                    const map = L.map(`${city}-map`, { center: config.center, zoom: config.zoom });
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+
+                    const cityBusinesses = businesses.filter(b => isInBoundingBox(b.lat, b.lng, config.bounds));
+                    const businessList = document.getElementById(`${city}-list`);
+
+                    // Add bounding boxes with labels
+                    config.clusters.forEach(cluster => {
+                        L.rectangle(cluster.bounds, { color: cluster.color, weight: 2, fillOpacity: 0.2 }).addTo(map);
+
+                        // Add a label for the cluster
+                        const labelLat = (cluster.bounds[0][0] + cluster.bounds[1][0]) / 2;
+                        const labelLng = (cluster.bounds[0][1] + cluster.bounds[1][1]) / 2;
+                        L.marker([labelLat, labelLng], {
+                            icon: L.divIcon({
+                                className: "custom-label",
+                                html: `<b style="color:${cluster.color}">${cluster.name}</b>`,
+                                iconSize: [100, 20]
+                            })
+                        }).addTo(map);
+                    });
+
+                    cityBusinesses.forEach((business, index) => {
+                        const number = index + 1;
+                        let highlightColor = "";
+
+                        // Check if business falls inside a cluster
+                        config.clusters.forEach(cluster => {
+                            if (business.lat >= cluster.bounds[0][0] && business.lat <= cluster.bounds[1][0] &&
+                                business.lng >= cluster.bounds[0][1] && business.lng <= cluster.bounds[1][1]) {
+                                highlightColor = cluster.color;
+                            }
+                        });
+
+                        // Add numbered marker with optional color
+                        L.marker([business.lat, business.lng], {
+                            icon: L.divIcon({
+                                className: 'custom-marker',
+                                html: `<span style="color:white">${number}</span>`,
+                                style: highlightColor ? `background:${highlightColor};` : "",
+                                iconSize: [20, 20]
+                            })
+                        }).bindPopup(`<b>${number}. ${business.name}</b><br>${business.address}`)
+                        .addTo(map);
+
+                        // Add business to sidebar with optional highlight
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('business-item');
+                        if (highlightColor) listItem.style.backgroundColor = highlightColor + "30"; // Light highlight
+                        listItem.innerHTML = `<span class="marker-number">${number}.</span> <b>${business.name}</b><br>${business.address}`;
+                        businessList.appendChild(listItem);
+                    });
+                }
+            })
+            .catch(error => console.error("Error loading JSON: ", error));
+    </script>
+</body>
+</html>
