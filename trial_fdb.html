@@ -45,20 +45,20 @@
         .map-container {
             display: flex;
             flex-direction: row;
-            gap: 20px;
-            margin-bottom: 40px;
+            gap: 10px;
+            margin-bottom: 30px;
             background: white;
             border-radius: 12px;
             box-shadow: var(--card-shadow);
-            padding: 20px;
-            max-width: 1800px;
+            padding: 15px;
+            max-width: 1600px;
             margin-left: auto;
             margin-right: auto;
         }
 
         .map {
             flex: 2;
-            height: 600px;
+            height: 800px;
             border-radius: 8px;
             overflow: hidden;
             border: none;
@@ -66,10 +66,10 @@
 
         .legend {
             flex: 1;
-            padding: 20px;
+            padding: 15px;
             background: white;
             border-radius: 8px;
-            max-height: 600px;
+            max-height: 800px;
             overflow-y: auto;
             min-width: 300px;
             max-width: 400px;
@@ -89,9 +89,9 @@
         }
 
         .business-item {
-            margin-bottom: 1rem;
-            padding: 12px;
-            border-radius: 6px;
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
             background: #f8f9fa;
             transition: all 0.3s ease;
         }
@@ -116,8 +116,15 @@
         }
 
         .custom-marker {
-            border: 2px solid white !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+            width: 24px !important;
+            height: 24px !important;
+            font-weight: bold;
+            background: var(--accent-color) !important;
+            color: white !important;
+            text-align: center !important;
+            line-height: 24px !important;
+            border-radius: 50% !important;
+            border: none !important;
         }
 
         .controls {
@@ -211,7 +218,7 @@
 <body>
     <div class="header">
         <h1 class="title">FDB Business Maps</h1>
-        <p class="subtitle">Explore businesses across major cities in Fiji</p>
+        <p class="subtitle">Participating MSMEs in the Secured Transaction Reform across major towns and cities - FDB</p>
     </div>
 
     <!-- Suva -->
