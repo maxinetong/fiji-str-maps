@@ -52,16 +52,6 @@
             text-decoration: underline;
         }
 
-        .marker-group {
-            font-weight: bold;
-            color: white;
-            font-size: 18px;
-            background: darkblue;
-            text-align: center;
-            padding: 5px;
-            border-radius: 5px;
-        }
-
         .title {
             font-size: 24px;
             font-weight: bold;
@@ -69,15 +59,13 @@
             margin-bottom: 15px;
         }
 
-        .custom-cluster {
-            width: 25px !important;
-            height: 25px !important;
+        .custom-marker {
             font-weight: bold;
-            background: red;
             color: white;
+            background: darkblue;
             text-align: center;
-            line-height: 25px;
-            border-radius: 50%;
+            padding: 5px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -133,40 +121,17 @@
                     const cityBusinesses = businesses.filter(b => isInBoundingBox(b.lat, b.lng, config.bounds));
                     const businessList = document.getElementById(`${city}-list`);
 
-                    // Group businesses by location
-                    const groupedLocations = {};
-                    cityBusinesses.forEach(business => {
-                        const key = `${business.lat},${business.lng}`;
-                        if (!groupedLocations[key]) {
-                            groupedLocations[key] = [];
-                        }
-                        groupedLocations[key].push(business);
-                    });
+                    cityBusinesses.forEach((business, index) => {
+                        const marker = L.marker([business.lat, business.lng])
+                            .bindPopup(`<b>${business.name}</b><br>${business.address}`)
+                            .addTo(map);
 
-                    Object.entries(groupedLocations).forEach(([location, businesses], index) => {
-                        const [lat, lng] = location.split(',').map(Number);
-
-                        // Create a label for the grouped businesses
-                        const groupLabel = `📍 Area ${index + 1} - ${businesses.length} Businesses`;
-
-                        // Popup content lists all businesses at that location
-                        const popupContent = businesses.map((b, i) => `<b>${i + 1}. ${b.name}</b><br>${b.address}`).join("<hr>");
-
-                        // Custom icon showing the number of businesses at one spot
-                        const marker = L.marker([lat, lng], {
-                            icon: L.divIcon({
-                                className: 'custom-cluster',
-                                html: businesses.length,
-                                iconSize: [25, 25]
-                            })
-                        }).bindPopup(popupContent).addTo(map);
-
-                        // Add the grouped location to the sidebar legend
+                        // Add to the legend
                         const listItem = document.createElement('li');
                         listItem.classList.add('business-item');
-                        listItem.innerHTML = `<b>${groupLabel}</b>`;
+                        listItem.innerHTML = `${index + 1}. <b>${business.name}</b> - ${business.address}`;
                         listItem.addEventListener('click', () => {
-                            map.setView([lat, lng], 15);
+                            map.setView([business.lat, business.lng], 15);
                             marker.openPopup();
                         });
                         businessList.appendChild(listItem);
