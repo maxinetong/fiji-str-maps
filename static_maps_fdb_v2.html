@@ -102,6 +102,17 @@
         </div>
     </div>
 
+    <!-- Download Button -->
+    <div>
+        <label for="map-select">Select Map:</label>
+        <select id="map-select">
+            <option value="suva-map">Suva</option>
+            <option value="nadi-map">Nadi</option>
+            <option value="lautoka-map">Lautoka</option>
+        </select>
+        <button id="download-map">Download Map</button>
+    </div>
+
     <script>
         const cityConfigs = {
             suva: { center: [-18.130224, 178.438269], zoom: 14, bounds: { south: -18.18, north: -18.05, west: 178.38, east: 178.48 } },
@@ -146,5 +157,26 @@
             })
             .catch(error => console.error("Error loading JSON: ", error));
     </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        document.getElementById("download-map").addEventListener("click", function() {
+            let selectedMap = document.getElementById("map-select").value; // Get selected map ID
+            let mapElement = document.getElementById(selectedMap);
+    
+            html2canvas(mapElement, {
+                useCORS: true, 
+                logging: false,
+                scale: 2 // Higher resolution for better quality
+            }).then(function(canvas) {
+                let link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = selectedMap + ".png";
+                link.click();
+            });
+        });
+    </script>
+    
 </body>
 </html>
