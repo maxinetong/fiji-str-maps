@@ -336,38 +336,33 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
-        document.getElementById("download-map").addEventListener("click", function () {
+        document.getElementById("download-map").addEventListener("click", function() {
             const selectedMap = document.getElementById("map-select").value;
             const mapElement = document.getElementById(selectedMap);
-    
+            
             // Show loading state
             this.disabled = true;
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-    
-            // Ensure the map is fully rendered before capturing
-            setTimeout(() => {
-                html2canvas(mapElement, {
-                    useCORS: true,
-                    logging: false,
-                    scale: 4, // Increased scale for better resolution
-                    backgroundColor: null,
-                    allowTaint: true,
-                    foreignObjectRendering: true
-                }).then((canvas) => {
-                    const link = document.createElement("a");
-                    link.href = canvas.toDataURL("image/png", 1.0); // Ensures highest quality
-                    link.download = `${selectedMap.split('-')[0]}-business-map.png`;
-                    link.click();
-    
-                    // Reset button state
-                    this.disabled = false;
-                    this.innerHTML = '<i class="fas fa-download"></i> Download Map';
-                }).catch(error => {
-                    console.error("Error generating image:", error);
-                    this.disabled = false;
-                    this.innerHTML = '<i class="fas fa-download"></i> Download Map';
-                });
-            }, 1000); // Small delay to ensure rendering is complete
+
+            html2canvas(mapElement, {
+                useCORS: true,
+                logging: false,
+                scale: 2,
+                backgroundColor: null
+            }).then((canvas) => {
+                const link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = `${selectedMap.split('-')[0]}-business-map.png`;
+                link.click();
+                
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-download"></i> Download Map';
+            }).catch(error => {
+                console.error("Error generating image:", error);
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-download"></i> Download Map';
+            });
         });
     </script>
 
