@@ -406,6 +406,11 @@
             lautoka: "-17.58,-17.63,177.43,177.48"
         };
         
+        // Helper function to check if coordinates are in bounding box (same as your original function)
+        function isInBoundingBox(lat, lng, bounds) {
+            return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
+        }
+        
         // Wait for page load
         window.onload = function() {
             // Set up all selection buttons
@@ -456,10 +461,22 @@
                                 b.lng >= west && b.lng <= east
                             );
                             
-                            // Format the list
-                            let copyList = filteredBusinesses.map((business, index) => 
-                                `${index + 1}. ${business.name} - ${business.address}`
-                            ).join('\n');
+                            // Need to find original index numbers for each business
+                            // We'll use the existing function and configs from your original code
+                            const cityBounds = window.cityConfigs[city].bounds;
+                            const allCityBusinesses = businesses.filter(b => 
+                                isInBoundingBox(b.lat, b.lng, cityBounds)
+                            );
+                            
+                            // Format the list with original index numbers
+                            let copyList = filteredBusinesses.map(business => {
+                                // Find the original index of this business in the city list
+                                const originalIndex = allCityBusinesses.findIndex(b => 
+                                    b.lat === business.lat && b.lng === business.lng && b.name === business.name
+                                );
+                                
+                                return `${originalIndex + 1}. ${business.name} - ${business.address}`;
+                            }).join('\n');
                             
                             // Display the results
                             document.getElementById('selection-results').style.display = 'block';
@@ -504,9 +521,6 @@
             });
         };
     </script>
-
-    </body>
-    </html>
 
 </body>
 </html>
