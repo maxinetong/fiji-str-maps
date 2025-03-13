@@ -264,14 +264,6 @@
         </button>
     </div>
 
-    <div id="selection-results" style="display: none; margin: 30px auto; max-width: 1600px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <h3>Selected Businesses</h3>
-        <button id="copy-results" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; margin-bottom: 15px; cursor: pointer;">
-            <i class="fas fa-copy"></i> Copy to Clipboard
-        </button>
-        <div id="selected-businesses-list" style="white-space: pre-line; font-family: monospace; background: #f5f6fa; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto;"></div>
-    </div>
-
     <script>
         const cityConfigs = {
             suva: { center: [-18.130224, 178.438269], zoom: 14, bounds: { south: -18.18, north: -18.05, west: 178.38, east: 178.48 } },
@@ -376,6 +368,14 @@
             });
         });
     </script>
+
+    <div id="selection-results" style="display: none; margin: 30px auto; max-width: 1600px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <h3>Selected Businesses</h3>
+        <button id="copy-results" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; margin-bottom: 15px; cursor: pointer;">
+            <i class="fas fa-copy"></i> Copy to Clipboard
+        </button>
+        <div id="selected-businesses-list" style="white-space: pre-line; font-family: monospace; background: #f5f6fa; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto;"></div>
+    </div>
 
     <script>
         // Store all businesses globally so we can access them later
