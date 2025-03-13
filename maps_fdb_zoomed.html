@@ -249,6 +249,12 @@
         </div>
     </div>
 
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button id="select-nadi" style="background-color: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin: 0 5px;">
+            Select Area in Nadi
+        </button>
+    </div>
+
     <!-- Lautoka -->
     <div class="map-container">
         <div id="lautoka-map" class="map"></div>
@@ -256,6 +262,12 @@
             <h3>Lautoka Businesses</h3>
             <ol id="lautoka-list" class="business-list"></ol>
         </div>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button id="select-lautoka" style="background-color: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin: 0 5px;">
+            Select Area in Lautoka
+        </button>
     </div>
 
     <!-- Controls -->
@@ -378,7 +390,6 @@
         });
     </script>
 
-    <!-- Add the results div here -->
     <div id="selection-results" style="display: none; margin: 30px auto; max-width: 1600px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <h3>Selected Businesses</h3>
         <button id="copy-results" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; margin-bottom: 15px; cursor: pointer;">
@@ -388,77 +399,90 @@
     </div>
 
     <script>
-        // Simple geographic filter for businesses
+        // Default coordinate bounds for each city, used as examples
+        const defaultBounds = {
+            suva: "-18.13,-18.15,178.42,178.44",  // north,south,west,east
+            nadi: "-17.75,-17.8,177.4,177.45",
+            lautoka: "-17.58,-17.63,177.43,177.48"
+        };
+        
+        // Wait for page load
         window.onload = function() {
-            // Add click event to the Suva button
-            document.getElementById('select-suva').addEventListener('click', function() {
-                // Change button appearance
-                this.style.backgroundColor = '#e74c3c';
-                this.textContent = 'Specify area (format: south,north,west,east)';
-                
-                // Prompt for geographic bounds
-                const boundsInput = prompt(
-                    "Enter geographic bounds as: south,north,west,east\n" +
-                    "For example, to select central Suva, try: -18.15,-18.13,178.42,178.44\n" +
-                    "(This is a small area in central Suva)", 
-                    "-18.15,-18.13,178.42,178.44"
-                );
-                
-                // Reset button appearance
-                this.style.backgroundColor = '#3498db';
-                this.textContent = 'Select Area in Suva';
-                
-                // Check if user cancelled
-                if (!boundsInput) return;
-                
-                // Parse bounds
-                const [south, north, west, east] = boundsInput.split(',').map(Number);
-                
-                // Validate inputs
-                if (isNaN(south) || isNaN(north) || isNaN(west) || isNaN(east)) {
-                    alert("Invalid input. Please enter numbers separated by commas.");
-                    return;
-                }
-                
-                // Show loading state
-                this.style.backgroundColor = '#e74c3c';
-                this.textContent = 'Loading businesses...';
-                
-                // Fetch and filter businesses
-                fetch('businesses_fdb.json')
-                    .then(response => response.json())
-                    .then(businesses => {
-                        // Filter businesses within the bounds
-                        const filteredBusinesses = businesses.filter(b => 
-                            b.lat >= south && b.lat <= north && 
-                            b.lng >= west && b.lng <= east
-                        );
-                        
-                        // Format the list
-                        let copyList = filteredBusinesses.map((business, index) => 
-                            `${index + 1}. ${business.name} - ${business.address}`
-                        ).join('\n');
-                        
-                        // Display the results
-                        document.getElementById('selection-results').style.display = 'block';
-                        document.getElementById('selected-businesses-list').textContent = 
-                            `Found ${filteredBusinesses.length} businesses in selected area (${south},${north},${west},${east}):\n\n${copyList}`;
-                        
-                        // Scroll to the results
-                        document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
-                        
-                        // Reset button
-                        this.style.backgroundColor = '#3498db';
-                        this.textContent = 'Select Area in Suva';
-                    })
-                    .catch(error => {
-                        console.error("Error loading businesses:", error);
-                        alert("Error loading businesses. Please check console for details.");
-                        
-                        // Reset button
-                        this.style.backgroundColor = '#3498db';
-                        this.textContent = 'Select Area in Suva';
-                    });
+            // Set up all selection buttons
+            document.querySelectorAll('[id^="select-"]').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Get city name from button ID
+                    const city = this.id.replace('select-', '');
+                    
+                    // Change button appearance
+                    this.style.backgroundColor = '#e74c3c';
+                    this.textContent = 'Specify area (format: north,south,west,east)';
+                    
+                    // Prompt for geographic bounds
+                    const boundsInput = prompt(
+                        `Enter geographic bounds for ${city} as: north,south,west,east\n` +
+                        `For example, to select central ${city}, try: ${defaultBounds[city]}\n` +
+                        "(This is a small area in central " + city + ")", 
+                        defaultBounds[city]
+                    );
+                    
+                    // Reset button appearance
+                    this.style.backgroundColor = '#3498db';
+                    this.textContent = 'Select Area in ' + city.charAt(0).toUpperCase() + city.slice(1);
+                    
+                    // Check if user cancelled
+                    if (!boundsInput) return;
+                    
+                    // Parse bounds (now in order north,south,west,east)
+                    const [north, south, west, east] = boundsInput.split(',').map(Number);
+                    
+                    // Validate inputs
+                    if (isNaN(north) || isNaN(south) || isNaN(west) || isNaN(east)) {
+                        alert("Invalid input. Please enter numbers separated by commas.");
+                        return;
+                    }
+                    
+                    // Show loading state
+                    this.style.backgroundColor = '#e74c3c';
+                    this.textContent = 'Loading businesses...';
+                    
+                    // Fetch and filter businesses
+                    fetch('businesses_fdb.json')
+                        .then(response => response.json())
+                        .then(businesses => {
+                            // Filter businesses within the bounds
+                            const filteredBusinesses = businesses.filter(b => 
+                                b.lat <= north && b.lat >= south && 
+                                b.lng >= west && b.lng <= east
+                            );
+                            
+                            // Format the list
+                            let copyList = filteredBusinesses.map((business, index) => 
+                                `${index + 1}. ${business.name} - ${business.address}`
+                            ).join('\n');
+                            
+                            // Display the results
+                            document.getElementById('selection-results').style.display = 'block';
+                            document.getElementById('selected-businesses-list').textContent = 
+                                `Found ${filteredBusinesses.length} businesses in selected area of ${city}:\n` +
+                                `North: ${north}, South: ${south}, West: ${west}, East: ${east}\n\n${copyList}`;
+                            
+                            // Scroll to the results
+                            document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
+                            
+                            // Reset button
+                            this.style.backgroundColor = '#3498db';
+                            this.textContent = 'Select Area in ' + city.charAt(0).toUpperCase() + city.slice(1);
+                        })
+                        .catch(error => {
+                            console.error("Error loading businesses:", error);
+                            alert("Error loading businesses. Please check console for details.");
+                            
+                            // Reset button
+                            this.style.backgroundColor = '#3498db';
+                            this.textContent = 'Select Area in ' + city.charAt(0).toUpperCase() + city.slice(1);
+                        });
+                });
             });
             
             // Copy button functionality
