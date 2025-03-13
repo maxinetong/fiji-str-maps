@@ -1,13 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>FDB Business Maps (By City)</title>
+    <title>Merchant Business Maps (By City)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
     <style>
         :root {
@@ -220,8 +217,8 @@
 </head>
 <body>
     <div class="header">
-        <h1 class="title">FDB Business Maps</h1>
-        <p class="subtitle">Participating MSMEs in the Secured Transaction Reform IE across major towns and cities - FDB</p>
+        <h1 class="title">Merchant Business Maps</h1>
+        <p class="subtitle">Participating MSMEs in the Secured Transaction Reform IE across major towns and cities - Merchant</p>
     </div>
 
     <!-- Suva -->
@@ -293,7 +290,7 @@
             return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
         };
 
-        fetch('businesses_fdb.json')
+        fetch('businesses_merchant.json')
             .then(response => response.json())
             .then(businesses => {
                 for (const [city, config] of Object.entries(cityConfigs)) {
@@ -308,8 +305,6 @@
                         attribution: '© OpenStreetMap contributors',
                         maxZoom: 19
                     }).addTo(map);
-
-                    if (city === 'suva') window.suvaMapInstance = map;
 
                     const cityBusinesses = businesses.filter(b => isInBoundingBox(b.lat, b.lng, config.bounds));
                     const businessList = document.getElementById(`${city}-list`);
@@ -467,7 +462,7 @@
                 this.textContent = 'Loading...';
                 
                 // Load and filter businesses
-                fetch('businesses_fdb.json')
+                fetch('businesses_merchant.json')
                     .then(response => response.json())
                     .then(businesses => {
                         // Get all businesses for this city (for reference numbering)
