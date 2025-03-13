@@ -404,7 +404,7 @@
                     // Add a custom control for area selection
                     const customControl = L.Control.extend({
                         options: {
-                            position: 'topleft'
+                            position: 'topright'
                         },
                         
                         onAdd: function() {
@@ -412,12 +412,18 @@
                             const button = L.DomUtil.create('a', '', container);
                             button.innerHTML = '◻';
                             button.href = '#';
-                            button.title = 'Select area';
+                            button.title = 'Select area for business list';
                             button.style.fontSize = '18px';
                             button.style.fontWeight = 'bold';
                             button.style.textAlign = 'center';
                             button.style.verticalAlign = 'middle';
                             button.style.lineHeight = '30px';
+                            button.style.width = '30px';
+                            button.style.height = '30px';
+                            button.style.display = 'block';
+                            button.style.backgroundColor = '#ffffff';
+                            button.style.boxShadow = '0 1px 5px rgba(0,0,0,0.65)';
+                            button.style.borderRadius = '4px';
                             
                             let isDrawing = false;
                             let startPoint = null;
