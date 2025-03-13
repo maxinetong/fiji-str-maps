@@ -387,10 +387,8 @@
             .then(businesses => {
                 allBusinesses = businesses;
                 
-                // Your existing code for creating maps...
+                // Implement a custom selection tool for each map
                 for (const [city, config] of Object.entries(cityConfigs)) {
-                    // Keep your existing map initialization code here
-                    
                     const map = L.map(`${city}-map`, { 
                         center: config.center, 
                         zoom: config.zoom,
@@ -403,71 +401,170 @@
                         maxZoom: 19
                     }).addTo(map);
                     
-                    // Add draw control
-                    const drawnItems = new L.FeatureGroup();
-                    map.addLayer(drawnItems);
-                    
-                    const drawControl = new L.Control.Draw({
-                        draw: {
-                            polyline: false,
-                            polygon: false,
-                            circle: false,
-                            marker: false,
-                            circlemarker: false,
-                            rectangle: {
-                                shapeOptions: {
-                                    color: '#3498db'
+                    // Add a custom control for area selection
+                    const customControl = L.Control.extend({
+                        options: {
+                            position: 'topleft'
+                        },
+                        
+                        onAdd: function() {
+                            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                            const button = L.DomUtil.create('a', '', container);
+                            button.innerHTML = '◻';
+                            button.href = '#';
+                            button.title = 'Select area';
+                            button.style.fontSize = '18px';
+                            button.style.fontWeight = 'bold';
+                            button.style.textAlign = 'center';
+                            button.style.verticalAlign = 'middle';
+                            button.style.lineHeight = '30px';
+                            
+                            let isDrawing = false;
+                            let startPoint = null;
+                            let rectangle = null;
+                            
+                            L.DomEvent.on(button, 'click', function(e) {
+                                L.DomEvent.stopPropagation(e);
+                                L.DomEvent.preventDefault(e);
+                                
+                                if (!isDrawing) {
+                                    button.style.backgroundColor = '#3498db';
+                                    button.style.color = 'white';
+                                    isDrawing = true;
+                                    
+                                    map.dragging.disable();
+                                    
+                                    map.on('mousedown', onMouseDown);
+                                } else {
+                                    resetDrawingState();
+                                }
+                            });
+                            
+                            function onMouseDown(e) {
+                                startPoint = e.latlng;
+                                rectangle = L.rectangle([startPoint, startPoint], {
+                                    color: '#3498db',
+                                    weight: 2
+                                }).addTo(map);
+                                
+                                map.on('mousemove', onMouseMove);
+                                map.on('mouseup', onMouseUp);
+                                map.on('mouseout', onMouseUp);
+                            }
+                            
+                            function onMouseMove(e) {
+                                if (rectangle && startPoint) {
+                                    rectangle.setBounds([startPoint, e.latlng]);
                                 }
                             }
-                        },
-                        edit: {
-                            featureGroup: drawnItems
+                            
+                            function onMouseUp(e) {
+                                map.off('mousemove', onMouseMove);
+                                map.off('mouseup', onMouseUp);
+                                map.off('mouseout', onMouseUp);
+                                
+                                if (rectangle && startPoint) {
+                                    const bounds = rectangle.getBounds();
+                                    
+                                    // Process the selected area
+                                    processSelectedArea(bounds, city);
+                                }
+                                
+                                resetDrawingState();
+                            }
+                            
+                            function resetDrawingState() {
+                                button.style.backgroundColor = '';
+                                button.style.color = '';
+                                isDrawing = false;
+                                startPoint = null;
+                                
+                                if (rectangle) {
+                                    map.removeLayer(rectangle);
+                                    rectangle = null;
+                                }
+                                
+                                map.dragging.enable();
+                                map.off('mousedown', onMouseDown);
+                            }
+                            
+                            return container;
                         }
                     });
                     
-                    map.addControl(drawControl);
-                    
-                    // Event for when rectangle is drawn
-                    map.on('draw:created', function(e) {
-                        drawnItems.clearLayers();
-                        const layer = e.layer;
-                        drawnItems.addLayer(layer);
-                        
-                        // Get the bounds of the rectangle
-                        const bounds = layer.getBounds();
-                        const south = bounds.getSouth();
-                        const north = bounds.getNorth();
-                        const west = bounds.getWest();
-                        const east = bounds.getEast();
-                        
-                        // Find businesses within these bounds
-                        const businessesInBounds = allBusinesses.filter(b => 
-                            b.lat >= south && b.lat <= north && 
-                            b.lng >= west && b.lng <= east
-                        );
-                        
-                        // Create formatted list
-                        let copyList = businessesInBounds.map((business, index) => 
-                            `${index + 1}. ${business.name} - ${business.address}`
-                        ).join('\n');
-                        
-                        // Display results on the page
-                        document.getElementById('selection-results').style.display = 'block';
-                        document.getElementById('selected-businesses-list').textContent = 
-                            `Found ${businessesInBounds.length} businesses in selected area (${city}):\n\n${copyList}`;
-                        
-                        // Scroll to results
-                        document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
-                    });
+                    map.addControl(new customControl());
                     
                     // Continue with your existing code for adding markers and list items
                     const cityBusinesses = businesses.filter(b => isInBoundingBox(b.lat, b.lng, config.bounds));
                     const businessList = document.getElementById(`${city}-list`);
                     
-                    // Rest of your existing code...
+                    cityBusinesses.forEach((business, index) => {
+                        const number = index + 1;
+                        
+                        // Add marker to map
+                        const marker = L.marker([business.lat, business.lng], {
+                            icon: L.divIcon({
+                                className: 'custom-marker',
+                                html: number,
+                                iconSize: [24, 24]
+                            })
+                        });
+                        
+                        // Add popup content
+                        const popupContent = `
+                            <div style="padding: 10px;">
+                                <h3 style="margin: 0 0 8px 0; color: #2c3e50;">${number}. ${business.name}</h3>
+                                <p style="margin: 0; color: #666;">${business.address}</p>
+                            </div>
+                        `;
+                        
+                        marker.bindPopup(popupContent).addTo(map);
+                        
+                        // Add business to legend
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('business-item');
+                        listItem.innerHTML = `
+                            <span class="marker-number">${number}</span>
+                            <strong>${business.name}</strong><br>
+                            <span style="color: #666; margin-left: 34px;">${business.address}</span>
+                        `;
+                        
+                        // Add hover interaction
+                        listItem.addEventListener('mouseenter', () => marker.openPopup());
+                        listItem.addEventListener('mouseleave', () => marker.closePopup());
+                        
+                        businessList.appendChild(listItem);
+                    });
                 }
             })
             .catch(error => console.error("Error loading JSON: ", error));
+        
+        // Function to process the selected area
+        function processSelectedArea(bounds, city) {
+            const south = bounds.getSouth();
+            const north = bounds.getNorth();
+            const west = bounds.getWest();
+            const east = bounds.getEast();
+            
+            // Find businesses within these bounds
+            const businessesInBounds = allBusinesses.filter(b => 
+                b.lat >= south && b.lat <= north && 
+                b.lng >= west && b.lng <= east
+            );
+            
+            // Create formatted list
+            let copyList = businessesInBounds.map((business, index) => 
+                `${index + 1}. ${business.name} - ${business.address}`
+            ).join('\n');
+            
+            // Display results on the page
+            document.getElementById('selection-results').style.display = 'block';
+            document.getElementById('selected-businesses-list').textContent = 
+                `Found ${businessesInBounds.length} businesses in selected area (${city}):\n\n${copyList}`;
+            
+            // Scroll to results
+            document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
+        }
             
         // Add copy functionality
         document.getElementById('copy-results').addEventListener('click', function() {
