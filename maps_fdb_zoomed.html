@@ -298,6 +298,8 @@
                         maxZoom: 19
                     }).addTo(map);
 
+                    if (city === 'suva') window.suvaMapInstance = map;
+
                     const cityBusinesses = businesses.filter(b => isInBoundingBox(b.lat, b.lng, config.bounds));
                     const businessList = document.getElementById(`${city}-list`);
 
@@ -385,91 +387,88 @@
         <div id="selected-businesses-list" style="white-space: pre-line; font-family: monospace; background: #f5f6fa; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto;"></div>
     </div>
 
-    <!-- Add the new script after the results div -->
     <script>
-        // This needs to run after the maps are already initialized
-        window.addEventListener('load', function() {
-            const suvaMap = document.getElementById('suva-map');
-            if (!suvaMap) {
-                alert("Map container not found");
+        // Store a reference to the map when it's created
+        let suvaMapInstance = null;
+        
+        // Modify your existing map initialization code (inside your fetch callback)
+        // Find where you create the Suva map with something like:
+        // const map = L.map(`${city}-map`, { ... });
+        
+        // And immediately after that, add this line:
+        // if (city === 'suva') suvaMapInstance = map;
+        
+        // Then add this button handler
+        document.getElementById('select-suva').addEventListener('click', function() {
+            // Check if we have the map reference
+            if (!suvaMapInstance) {
+                alert("Map isn't ready yet. Please wait a moment and try again.");
                 return;
             }
             
-            // Find the Leaflet map instance
-            let map = null;
-            for (let key in L.DomUtil._leaflet_id_map) {
-                const instance = L.DomUtil._leaflet_id_map[key];
-                if (instance._container && 
-                    (instance._container === suvaMap || instance._container.parentNode === suvaMap)) {
-                    map = instance;
-                    break;
-                }
-            }
+            // Change button appearance
+            this.style.backgroundColor = '#e74c3c';
+            this.textContent = 'Click and drag on map';
             
-            if (!map) {
-                alert("Could not find map instance. Please check the console for errors.");
-                return;
-            }
+            // Create a literal list of all businesses in Suva
+            const southBound = -18.18;
+            const northBound = -18.05;
+            const westBound = 178.38;
+            const eastBound = 178.48;
             
-            // Set up the selection button
-            const selectButton = document.getElementById('select-suva');
-            selectButton.addEventListener('click', function() {
-                alert("Starting selection mode - click and drag on the map");
-                this.style.backgroundColor = '#e74c3c';
-                this.textContent = 'Drawing...';
-                
-                let startPoint = null;
-                let rectangle = null;
-                
-                // Disable map dragging
-                map.dragging.disable();
-                
-                // Handle mouse down
-                function onMouseDown(e) {
-                    startPoint = e.latlng;
-                    rectangle = L.rectangle([startPoint, startPoint], {
-                        color: '#e74c3c',
-                        weight: 2
-                    }).addTo(map);
+            // Print all businesses in Suva
+            fetch('businesses_fdb.json')
+                .then(response => response.json())
+                .then(businesses => {
+                    // Find businesses in Suva
+                    const suvaBusinesses = businesses.filter(b => 
+                        b.lat >= southBound && b.lat <= northBound && 
+                        b.lng >= westBound && b.lng <= eastBound
+                    );
                     
-                    map.on('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                }
-                
-                // Handle mouse move
-                function onMouseMove(e) {
-                    if (rectangle && startPoint) {
-                        rectangle.setBounds([startPoint, e.latlng]);
-                    }
-                }
-                
-                // Handle mouse up
-                function onMouseUp(e) {
-                    map.off('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    map.off('mousedown', onMouseDown);
+                    // Format the list
+                    let copyList = suvaBusinesses.map((business, index) => 
+                        `${index + 1}. ${business.name} - ${business.address}`
+                    ).join('\n');
                     
-                    // Get bounds and find businesses
-                    if (rectangle && startPoint) {
-                        const bounds = rectangle.getBounds();
-                        
-                        // Reset drawing state
-                        map.dragging.enable();
-                        selectButton.style.backgroundColor = '#3498db';
-                        selectButton.textContent = 'Select Area in Suva';
-                        
-                        // This is where we'd normally process the selection
-                        // But for now, just show a confirmation
-                        alert("Selection complete! In a real implementation, we would show businesses in this area.");
-                        
-                        // Remove the rectangle
-                        map.removeLayer(rectangle);
-                    }
-                }
-                
-                // Start listening for mousedown
-                map.on('mousedown', onMouseDown);
-            });
+                    // Display the results
+                    document.getElementById('selection-results').style.display = 'block';
+                    document.getElementById('selected-businesses-list').textContent = 
+                        `All businesses in Suva (${suvaBusinesses.length}):\n\n${copyList}`;
+                    
+                    // Scroll to the results
+                    document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Reset the button
+                    this.style.backgroundColor = '#3498db';
+                    this.textContent = 'Select Area in Suva';
+                })
+                .catch(error => {
+                    console.error("Error loading businesses:", error);
+                    alert("Error loading businesses. Please check console for details.");
+                    
+                    // Reset the button
+                    this.style.backgroundColor = '#3498db';
+                    this.textContent = 'Select Area in Suva';
+                });
+        });
+        
+        // Copy button functionality
+        document.getElementById('copy-results').addEventListener('click', function() {
+            const textToCopy = document.getElementById('selected-businesses-list').textContent;
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => {
+                    // Show confirmation
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                    alert('Failed to copy text. You may need to copy manually.');
+                });
         });
     </script>
 
