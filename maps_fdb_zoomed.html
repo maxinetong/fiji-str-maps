@@ -388,88 +388,75 @@
     </div>
 
     <script>
-        // Store a reference to the map when it's created
-        let suvaMapInstance = null;
+        // When the page is fully loaded
+        window.onload = function() {
+            // Add click event to the button
+            document.getElementById('select-suva').addEventListener('click', function() {
+                // Change button appearance
+                this.style.backgroundColor = '#e74c3c';
+                this.textContent = 'Loading businesses...';
+                
+                // Define Suva bounds
+                const southBound = -18.18;
+                const northBound = -18.05;
+                const westBound = 178.38;
+                const eastBound = 178.48;
+                
+                // Fetch and display businesses
+                fetch('businesses_fdb.json')
+                    .then(response => response.json())
+                    .then(businesses => {
+                        // Find businesses in Suva
+                        const suvaBusinesses = businesses.filter(b => 
+                            b.lat >= southBound && b.lat <= northBound && 
+                            b.lng >= westBound && b.lng <= eastBound
+                        );
+                        
+                        // Format the list
+                        let copyList = suvaBusinesses.map((business, index) => 
+                            `${index + 1}. ${business.name} - ${business.address}`
+                        ).join('\n');
+                        
+                        // Display the results
+                        document.getElementById('selection-results').style.display = 'block';
+                        document.getElementById('selected-businesses-list').textContent = 
+                            `All businesses in Suva (${suvaBusinesses.length}):\n\n${copyList}`;
+                        
+                        // Scroll to the results
+                        document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Reset the button
+                        this.style.backgroundColor = '#3498db';
+                        this.textContent = 'Select Area in Suva';
+                    })
+                    .catch(error => {
+                        console.error("Error loading businesses:", error);
+                        alert("Error loading businesses. Please check console for details.");
+                        
+                        // Reset the button
+                        this.style.backgroundColor = '#3498db';
+                        this.textContent = 'Select Area in Suva';
+                    });
+            });
         
-        // Modify your existing map initialization code (inside your fetch callback)
-        // Find where you create the Suva map with something like:
-        // const map = L.map(`${city}-map`, { ... });
-        
-        // And immediately after that, add this line:
-        // if (city === 'suva') suvaMapInstance = map;
-        
-        // Then add this button handler
-        document.getElementById('select-suva').addEventListener('click', function() {
-            // Check if we have the map reference
-            if (!suvaMapInstance) {
-                alert("Map isn't ready yet. Please wait a moment and try again.");
-                return;
-            }
-            
-            // Change button appearance
-            this.style.backgroundColor = '#e74c3c';
-            this.textContent = 'Click and drag on map';
-            
-            // Create a literal list of all businesses in Suva
-            const southBound = -18.18;
-            const northBound = -18.05;
-            const westBound = 178.38;
-            const eastBound = 178.48;
-            
-            // Print all businesses in Suva
-            fetch('businesses_fdb.json')
-                .then(response => response.json())
-                .then(businesses => {
-                    // Find businesses in Suva
-                    const suvaBusinesses = businesses.filter(b => 
-                        b.lat >= southBound && b.lat <= northBound && 
-                        b.lng >= westBound && b.lng <= eastBound
-                    );
-                    
-                    // Format the list
-                    let copyList = suvaBusinesses.map((business, index) => 
-                        `${index + 1}. ${business.name} - ${business.address}`
-                    ).join('\n');
-                    
-                    // Display the results
-                    document.getElementById('selection-results').style.display = 'block';
-                    document.getElementById('selected-businesses-list').textContent = 
-                        `All businesses in Suva (${suvaBusinesses.length}):\n\n${copyList}`;
-                    
-                    // Scroll to the results
-                    document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
-                    
-                    // Reset the button
-                    this.style.backgroundColor = '#3498db';
-                    this.textContent = 'Select Area in Suva';
-                })
-                .catch(error => {
-                    console.error("Error loading businesses:", error);
-                    alert("Error loading businesses. Please check console for details.");
-                    
-                    // Reset the button
-                    this.style.backgroundColor = '#3498db';
-                    this.textContent = 'Select Area in Suva';
-                });
-        });
-        
-        // Copy button functionality
-        document.getElementById('copy-results').addEventListener('click', function() {
-            const textToCopy = document.getElementById('selected-businesses-list').textContent;
-            navigator.clipboard.writeText(textToCopy)
-                .then(() => {
-                    // Show confirmation
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                    setTimeout(() => {
-                        this.innerHTML = originalText;
-                    }, 2000);
-                })
-                .catch(err => {
-                    console.error('Failed to copy:', err);
-                    alert('Failed to copy text. You may need to copy manually.');
-                });
-        });
+            // Copy button functionality
+            document.getElementById('copy-results').addEventListener('click', function() {
+                const textToCopy = document.getElementById('selected-businesses-list').textContent;
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => {
+                        // Show confirmation
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                        setTimeout(() => {
+                            this.innerHTML = originalText;
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy:', err);
+                        alert('Failed to copy text. You may need to copy manually.');
+                    });
+            });
+        };
     </script>
 
     </body>
