@@ -399,115 +399,32 @@
     </div>
 
     <script>
-        // Default coordinate bounds for each city, used as examples
+        // Default coordinate bounds for each city (north,south,west,east)
         const defaultBounds = {
-            suva: "-18.13,-18.15,178.42,178.44",  // north,south,west,east
+            suva: "-18.13,-18.15,178.42,178.44",
             nadi: "-17.75,-17.8,177.4,177.45",
             lautoka: "-17.58,-17.63,177.43,177.48"
         };
         
-        // Helper function to check if coordinates are in bounding box (same as your original function)
-        function isInBoundingBox(lat, lng, bounds) {
-            return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
-        }
+        // City bounds - using the same values as in your original cityConfigs
+        const cityBounds = {
+            suva: { south: -18.18, north: -18.05, west: 178.38, east: 178.48 },
+            nadi: { south: -17.85, north: -17.75, west: 177.38, east: 177.48 },
+            lautoka: { south: -17.65, north: -17.55, west: 177.42, east: 177.48 }
+        };
         
-        // Wait for page load
-        window.onload = function() {
-            // Set up all selection buttons
-            document.querySelectorAll('[id^="select-"]').forEach(button => {
-                button.addEventListener('click', function() {
-                    // Get city name from button ID
-                    const city = this.id.replace('select-', '');
-                    
-                    // Change button appearance
-                    this.style.backgroundColor = '#e74c3c';
-                    this.textContent = 'Specify area (format: north,south,west,east)';
-                    
-                    // Prompt for geographic bounds
-                    const boundsInput = prompt(
-                        `Enter geographic bounds for ${city} as: north,south,west,east\n` +
-                        `For example, to select central ${city}, try: ${defaultBounds[city]}\n` +
-                        "(This is a small area in central " + city + ")", 
-                        defaultBounds[city]
-                    );
-                    
-                    // Reset button appearance
-                    this.style.backgroundColor = '#3498db';
-                    this.textContent = 'Select Area in ' + city.charAt(0).toUpperCase() + city.slice(1);
-                    
-                    // Check if user cancelled
-                    if (!boundsInput) return;
-                    
-                    // Parse bounds (now in order north,south,west,east)
-                    const [north, south, west, east] = boundsInput.split(',').map(Number);
-                    
-                    // Validate inputs
-                    if (isNaN(north) || isNaN(south) || isNaN(west) || isNaN(east)) {
-                        alert("Invalid input. Please enter numbers separated by commas.");
-                        return;
-                    }
-                    
-                    // Show loading state
-                    this.style.backgroundColor = '#e74c3c';
-                    this.textContent = 'Loading businesses...';
-                    
-                    // Fetch and filter businesses
-                    fetch('businesses_fdb.json')
-                        .then(response => response.json())
-                        .then(businesses => {
-                            // Filter businesses within the bounds
-                            const filteredBusinesses = businesses.filter(b => 
-                                b.lat <= north && b.lat >= south && 
-                                b.lng >= west && b.lng <= east
-                            );
-                            
-                            // Need to find original index numbers for each business
-                            // We'll use the existing function and configs from your original code
-                            const cityBounds = window.cityConfigs[city].bounds;
-                            const allCityBusinesses = businesses.filter(b => 
-                                isInBoundingBox(b.lat, b.lng, cityBounds)
-                            );
-                            
-                            // Format the list with original index numbers
-                            let copyList = filteredBusinesses.map(business => {
-                                // Find the original index of this business in the city list
-                                const originalIndex = allCityBusinesses.findIndex(b => 
-                                    b.lat === business.lat && b.lng === business.lng && b.name === business.name
-                                );
-                                
-                                return `${originalIndex + 1}. ${business.name} - ${business.address}`;
-                            }).join('\n');
-                            
-                            // Display the results
-                            document.getElementById('selection-results').style.display = 'block';
-                            document.getElementById('selected-businesses-list').textContent = 
-                                `Found ${filteredBusinesses.length} businesses in selected area of ${city}:\n` +
-                                `North: ${north}, South: ${south}, West: ${west}, East: ${east}\n\n${copyList}`;
-                            
-                            // Scroll to the results
-                            document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
-                            
-                            // Reset button
-                            this.style.backgroundColor = '#3498db';
-                            this.textContent = 'Select Area in ' + city.charAt(0).toUpperCase() + city.slice(1);
-                        })
-                        .catch(error => {
-                            console.error("Error loading businesses:", error);
-                            alert("Error loading businesses. Please check console for details.");
-                            
-                            // Reset button
-                            this.style.backgroundColor = '#3498db';
-                            this.textContent = 'Select Area in ' + city.charAt(0).toUpperCase() + city.slice(1);
-                        });
-                });
-            });
+        // Add event listeners when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up each button
+            setupButton('suva');
+            setupButton('nadi');
+            setupButton('lautoka');
             
-            // Copy button functionality
+            // Set up copy button
             document.getElementById('copy-results').addEventListener('click', function() {
                 const textToCopy = document.getElementById('selected-businesses-list').textContent;
                 navigator.clipboard.writeText(textToCopy)
                     .then(() => {
-                        // Show confirmation
                         const originalText = this.innerHTML;
                         this.innerHTML = '<i class="fas fa-check"></i> Copied!';
                         setTimeout(() => {
@@ -519,7 +436,94 @@
                         alert('Failed to copy text. You may need to copy manually.');
                     });
             });
-        };
+        });
+        
+        // Setup function for each button
+        function setupButton(city) {
+            const button = document.getElementById(`select-${city}`);
+            if (!button) return;
+            
+            button.addEventListener('click', function() {
+                // Show prompt for coordinates
+                const boundsInput = prompt(
+                    `Enter geographic bounds for ${city} as: north,south,west,east\n` +
+                    `For example, try: ${defaultBounds[city]}`, 
+                    defaultBounds[city]
+                );
+                
+                // Exit if cancelled
+                if (!boundsInput) return;
+                
+                // Parse coordinates
+                const [north, south, west, east] = boundsInput.split(',').map(Number);
+                
+                // Validate inputs
+                if (isNaN(north) || isNaN(south) || isNaN(west) || isNaN(east)) {
+                    alert("Invalid input. Please enter numbers separated by commas.");
+                    return;
+                }
+                
+                // Show loading state
+                this.style.backgroundColor = '#e74c3c';
+                this.textContent = 'Loading...';
+                
+                // Load and filter businesses
+                fetch('businesses_fdb.json')
+                    .then(response => response.json())
+                    .then(businesses => {
+                        // Get all businesses for this city (for reference numbering)
+                        const allCityBusinesses = businesses.filter(b => 
+                            b.lat >= cityBounds[city].south && 
+                            b.lat <= cityBounds[city].north && 
+                            b.lng >= cityBounds[city].west && 
+                            b.lng <= cityBounds[city].east
+                        );
+                        
+                        // Get businesses in selected area
+                        const selectedBusinesses = businesses.filter(b => 
+                            b.lat >= south && b.lat <= north && 
+                            b.lng >= west && b.lng <= east
+                        );
+                        
+                        // Format the list
+                        let copyList = selectedBusinesses.map(business => {
+                            // Find original index in city list
+                            let originalIndex = -1;
+                            for (let i = 0; i < allCityBusinesses.length; i++) {
+                                const b = allCityBusinesses[i];
+                                if (b.lat === business.lat && b.lng === business.lng && b.name === business.name) {
+                                    originalIndex = i;
+                                    break;
+                                }
+                            }
+                            
+                            const markerNumber = originalIndex !== -1 ? (originalIndex + 1) : '?';
+                            return `${markerNumber}. ${business.name} - ${business.address}`;
+                        }).join('\n');
+                        
+                        // Display results
+                        document.getElementById('selection-results').style.display = 'block';
+                        document.getElementById('selected-businesses-list').textContent = 
+                            `Found ${selectedBusinesses.length} businesses in selected area of ${city}:\n` +
+                            `North: ${north}, South: ${south}, West: ${west}, East: ${east}\n\n${copyList}`;
+                        
+                        // Scroll to results
+                        document.getElementById('selection-results').scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Reset button
+                        this.style.backgroundColor = '#3498db';
+                        this.textContent = `Select Area in ${city.charAt(0).toUpperCase() + city.slice(1)}`;
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("Error loading businesses. Please try again.");
+                        
+                        // Reset button
+                        this.style.backgroundColor = '#3498db';
+                        this.textContent = `Select Area in ${city.charAt(0).toUpperCase() + city.slice(1)}`;
+                    });
+            });
+        }
     </script>
 
 </body>
